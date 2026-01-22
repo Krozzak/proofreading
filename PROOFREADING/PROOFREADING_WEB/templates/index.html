@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>L'Oréal - Printer Proofreading</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --loreal-blue: #2649B2;
+            --loreal-light-blue: #4A74F3;
+            --loreal-purple: #8E7DE3;
+            --loreal-light: #D4D9F0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, var(--loreal-blue) 0%, var(--loreal-purple) 100%);
+            color: white;
+            padding: 1.5rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .upload-zone {
+            background: white;
+            border: 3px dashed var(--loreal-light);
+            border-radius: 15px;
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--loreal-blue);
+            background: #f8f9fa;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .upload-zone.dragover {
+            border-color: var(--loreal-purple);
+            background: #f0f0ff;
+        }
+
+        .upload-zone i {
+            font-size: 4rem;
+            color: var(--loreal-light-blue);
+            margin-bottom: 1rem;
+        }
+
+        .threshold-control {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        #results-section {
+            display: none;
+            height: calc(100vh - 100px);
+            overflow: hidden;
+        }
+
+        /* Interface style Tkinter */
+        .similarity-bar-container {
+            background: white;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .similarity-bar-top {
+            background: var(--loreal-blue);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .litho-code {
+            background: white;
+            color: var(--loreal-blue);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: 1px solid #ddd;
+        }
+
+        .similarity-progress {
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 5px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .similarity-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .similarity-threshold-line {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: #ffc107;
+            border-right: 3px dashed #ffc107;
+        }
+
+        .images-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            height: calc(100vh - 520px);
+            min-height: 400px;
+        }
+
+        .image-panel {
+            flex: 1;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .image-header {
+            padding: 0.75rem;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+        }
+
+        .image-header.original {
+            background: var(--loreal-light-blue);
+        }
+
+        .image-header.printer {
+            background: var(--loreal-purple);
+        }
+
+        .image-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: white;
+            overflow: hidden;
+        }
+
+        .image-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 5px;
+        }
+
+        .image-filename {
+            padding: 0.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+            border-top: 1px solid #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .controls-container {
+            background: white;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .validation-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-nav {
+            flex: 1;
+            padding: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .btn-approve {
+            flex: 1;
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .btn-approve:hover {
+            background: #218838;
+        }
+
+        .btn-reject {
+            flex: 1;
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .btn-reject:hover {
+            background: #c82333;
+        }
+
+        .results-table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1rem;
+            height: 250px;
+            overflow-y: auto;
+        }
+
+        .results-table {
+            font-size: 0.9rem;
+        }
+
+        .results-table th {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .table-row-selected {
+            background: #e3f2fd !important;
+            font-weight: bold;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .no-image-placeholder {
+            color: #999;
+            font-size: 1.2rem;
+            text-align: center;
+        }
+
+        .spinner-border-custom {
+            width: 3rem;
+            height: 3rem;
+            border-width: 0.4rem;
+        }
+
+        .btn-loreal {
+            background: var(--loreal-blue);
+            color: white;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s;
+        }
+
+        .btn-loreal:hover {
+            background: var(--loreal-purple);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-loreal:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h3 class="mb-0">
+                        <i class="bi bi-file-earmark-check"></i>
+                        PRINTER PROOFREADING
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-3 py-2">
+        <!-- Upload Section -->
+        <div id="upload-section">
+            <!-- Threshold Control -->
+            <div class="threshold-control">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="mb-1"><i class="bi bi-sliders"></i> Seuil d'Approbation Automatique</h6>
+                        <small class="text-muted">Les fichiers avec un score ≥ ce seuil seront approuvés automatiquement</small>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <input type="number" id="threshold" class="form-control" value="95" min="0" max="100" step="0.5">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Zones -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="upload-zone" id="original-zone">
+                        <i class="bi bi-folder-plus"></i>
+                        <h4>Dossier Design (Original)</h4>
+                        <p class="text-muted mb-0">Glissez vos fichiers PDF ici ou cliquez</p>
+                        <input type="file" id="original-input" webkitdirectory directory multiple style="display: none;">
+                        <div class="file-list mt-2" id="original-files"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="upload-zone" id="printer-zone">
+                        <i class="bi bi-folder-plus"></i>
+                        <h4>Dossier Imprimeur</h4>
+                        <p class="text-muted mb-0">Glissez vos fichiers PDF ici ou cliquez</p>
+                        <input type="file" id="printer-input" webkitdirectory directory multiple style="display: none;">
+                        <div class="file-list mt-2" id="printer-files"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Button -->
+            <div class="text-center mb-3">
+                <button id="start-btn" class="btn btn-loreal" disabled>
+                    <i class="bi bi-play-circle"></i>
+                    COMMENCER L'ANALYSE
+                </button>
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-container text-center" id="progress-container">
+                <div class="spinner-border text-primary spinner-border-custom" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3 h5">Analyse en cours...</p>
+                <p class="text-muted">Veuillez patienter pendant le traitement des fichiers</p>
+            </div>
+        </div>
+
+        <!-- Results Section (Interface style Tkinter) -->
+        <div id="results-section">
+            <!-- Barre de similarité -->
+            <div class="similarity-bar-container">
+                <div class="similarity-bar-top">
+                    <div>
+                        <span>Code Litho:</span>
+                        <span class="litho-code ms-2" id="current-litho-code" onclick="copyLithoCode()" title="Cliquer pour copier">--</span>
+                    </div>
+                    <div>
+                        <span class="me-2">Seuil:</span>
+                        <input type="range" id="threshold-slider" min="0" max="100" value="85" class="form-range d-inline-block" style="width: 150px;">
+                        <span class="ms-2" id="threshold-display">85%</span>
+                    </div>
+                </div>
+                <div class="similarity-progress" id="similarity-progress">
+                    <div class="similarity-fill" id="similarity-fill" style="width: 0%; background: #28a745;">0%</div>
+                    <div class="similarity-threshold-line" id="threshold-line" style="left: 85%;"></div>
+                </div>
+                <div class="text-center">
+                    <strong id="similarity-status">Similarité: --</strong>
+                </div>
+            </div>
+
+            <!-- Images côte-à-côte -->
+            <div class="images-container">
+                <div class="image-panel">
+                    <div class="image-header original">DOSSIER DESIGN (ORIGINAL)</div>
+                    <div class="image-content" id="original-image-container">
+                        <div class="no-image-placeholder">Aucune image</div>
+                    </div>
+                    <div class="image-filename" id="original-filename">--</div>
+                </div>
+                <div class="image-panel">
+                    <div class="image-header printer">DOSSIER IMPRIMEUR</div>
+                    <div class="image-content" id="printer-image-container">
+                        <div class="no-image-placeholder">Aucune image</div>
+                    </div>
+                    <div class="image-filename" id="printer-filename">--</div>
+                </div>
+            </div>
+
+            <!-- Boutons de contrôle -->
+            <div class="controls-container">
+                <div class="navigation-buttons">
+                    <button class="btn btn-secondary btn-nav" id="prev-btn" onclick="navigatePrevious()">
+                        <i class="bi bi-chevron-left"></i> Précédent
+                    </button>
+                    <button class="btn btn-secondary btn-nav" id="next-btn" onclick="navigateNext()">
+                        Suivant <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+                <div class="validation-buttons">
+                    <button class="btn-approve" id="approve-btn" onclick="validateCurrent(true)">
+                        <i class="bi bi-check-lg"></i> Approuver
+                    </button>
+                    <button class="btn-reject" id="reject-btn" onclick="validateCurrent(false)">
+                        <i class="bi bi-x-lg"></i> Rejeter
+                    </button>
+                </div>
+            </div>
+
+            <!-- Boutons d'export et tableau -->
+            <div class="export-buttons">
+                <button class="btn btn-sm btn-primary" onclick="exportCSV()">
+                    <i class="bi bi-download"></i> Exporter CSV
+                </button>
+                <button class="btn btn-sm btn-info" onclick="copyToClipboard()">
+                    <i class="bi bi-clipboard"></i> Copier
+                </button>
+                <button class="btn btn-sm btn-success" id="filter-btn" onclick="toggleFilter()">
+                    <i class="bi bi-funnel"></i> Fichiers correspondants
+                </button>
+                <button class="btn btn-sm btn-secondary ms-auto" onclick="newAnalysis()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Nouvelle Analyse
+                </button>
+            </div>
+
+            <!-- Tableau des résultats -->
+            <div class="results-table-container">
+                <table class="table table-sm table-hover results-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 100px;">Code Litho</th>
+                            <th style="width: 200px;">Filename</th>
+                            <th style="width: 120px;">Matching</th>
+                            <th style="width: 100px;">Similarity</th>
+                            <th style="width: 120px;">Validation</th>
+                            <th>Comment</th>
+                            <th style="width: 150px;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let originalFiles = [];
+        let printerFiles = [];
+        let results = [];
+        let currentIndex = 0;
+        let showOnlyMatched = false;
+
+        // Setup upload zones
+        function setupUploadZone(zoneId, inputId, filesArray, displayId) {
+            const zone = document.getElementById(zoneId);
+            const input = document.getElementById(inputId);
+            const display = document.getElementById(displayId);
+
+            zone.addEventListener('click', () => input.click());
+
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
+
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                handleFiles(e.dataTransfer.files, filesArray, display);
+            });
+
+            input.addEventListener('change', (e) => {
+                handleFiles(e.target.files, filesArray, display);
+            });
+        }
+
+        function handleFiles(files, filesArray, display) {
+            filesArray.length = 0;
+            Array.from(files).forEach(file => {
+                if (file.name.toLowerCase().endsWith('.pdf')) {
+                    filesArray.push(file);
+                }
+            });
+
+            display.innerHTML = filesArray.length > 0
+                ? `<small class="text-success"><i class="bi bi-check-circle"></i> ${filesArray.length} fichier(s) PDF sélectionné(s)</small>`
+                : '';
+
+            checkStartButton();
+        }
+
+        function checkStartButton() {
+            const startBtn = document.getElementById('start-btn');
+            startBtn.disabled = !(originalFiles.length > 0 && printerFiles.length > 0);
+        }
+
+        // Setup
+        setupUploadZone('original-zone', 'original-input', originalFiles, 'original-files');
+        setupUploadZone('printer-zone', 'printer-input', printerFiles, 'printer-files');
+
+        // Start analysis
+        document.getElementById('start-btn').addEventListener('click', async () => {
+            const threshold = document.getElementById('threshold').value;
+            const formData = new FormData();
+
+            originalFiles.forEach(file => formData.append('original_folder', file));
+            printerFiles.forEach(file => formData.append('printer_folder', file));
+            formData.append('threshold', threshold);
+
+            document.getElementById('progress-container').style.display = 'block';
+            document.getElementById('start-btn').disabled = true;
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    await loadResults();
+                    document.getElementById('upload-section').style.display = 'none';
+                    document.getElementById('results-section').style.display = 'block';
+                    document.getElementById('threshold-slider').value = threshold;
+                    document.getElementById('threshold-display').textContent = threshold + '%';
+                    updateThresholdLine();
+                    showCurrentResult();
+                } else {
+                    alert('Erreur: ' + (data.error || 'Erreur inconnue'));
+                    document.getElementById('progress-container').style.display = 'none';
+                    document.getElementById('start-btn').disabled = false;
+                }
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+                document.getElementById('progress-container').style.display = 'none';
+                document.getElementById('start-btn').disabled = false;
+            }
+        });
+
+        // Load results
+        async function loadResults() {
+            const response = await fetch('/results');
+            results = await response.json();
+            updateResultsTable();
+        }
+
+        // Show current result
+        function showCurrentResult() {
+            const filtered = getFilteredResults();
+            if (filtered.length === 0) {
+                return;
+            }
+
+            if (currentIndex >= filtered.length) {
+                currentIndex = 0;
+            }
+
+            const result = filtered[currentIndex];
+
+            // Update litho code
+            document.getElementById('current-litho-code').textContent = result.litho_code;
+
+            // Update images
+            const originalContainer = document.getElementById('original-image-container');
+            const printerContainer = document.getElementById('printer-image-container');
+
+            if (result.original_image) {
+                originalContainer.innerHTML = `<img src="${result.original_image}" alt="Original">`;
+            } else {
+                originalContainer.innerHTML = '<div class="no-image-placeholder">Pas de fichier original</div>';
+            }
+
+            if (result.printer_image) {
+                printerContainer.innerHTML = `<img src="${result.printer_image}" alt="Printer">`;
+            } else {
+                printerContainer.innerHTML = '<div class="no-image-placeholder">Pas de fichier imprimeur</div>';
+            }
+
+            // Update filenames
+            document.getElementById('original-filename').textContent = result.original_path ? result.filename : 'Fichier manquant';
+            document.getElementById('printer-filename').textContent = result.printer_path ? result.filename : 'Fichier manquant';
+
+            // Update similarity
+            if (result.score !== null && result.score !== undefined) {
+                const score = parseFloat(result.score);
+                const threshold = parseFloat(document.getElementById('threshold-slider').value);
+                const isConforme = score >= threshold;
+                const color = isConforme ? '#28a745' : '#dc3545';
+                const status = isConforme ? '✓ CONFORME' : '✗ NON CONFORME';
+
+                document.getElementById('similarity-fill').style.width = score + '%';
+                document.getElementById('similarity-fill').style.background = color;
+                document.getElementById('similarity-fill').textContent = Math.round(score) + '%';
+                document.getElementById('similarity-status').textContent = `Similarité: ${Math.round(score)}% - ${status}`;
+                document.getElementById('similarity-status').style.color = color;
+            } else {
+                document.getElementById('similarity-fill').style.width = '0%';
+                document.getElementById('similarity-fill').textContent = 'N/A';
+                document.getElementById('similarity-status').textContent = 'Similarité: N/A (fichier manquant)';
+                document.getElementById('similarity-status').style.color = '#666';
+            }
+
+            // Update table selection
+            updateTableSelection();
+
+            // Enable/disable buttons
+            document.getElementById('prev-btn').disabled = currentIndex === 0;
+            document.getElementById('next-btn').disabled = currentIndex === filtered.length - 1;
+        }
+
+        // Navigation
+        function navigatePrevious() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                showCurrentResult();
+            }
+        }
+
+        function navigateNext() {
+            const filtered = getFilteredResults();
+            if (currentIndex < filtered.length - 1) {
+                currentIndex++;
+                showCurrentResult();
+            }
+        }
+
+        // Validate current
+        async function validateCurrent(approved) {
+            const filtered = getFilteredResults();
+            const result = filtered[currentIndex];
+            const originalIndex = results.indexOf(result);
+
+            let comment = '';
+            if (!approved) {
+                comment = prompt('Commentaire de rejet:');
+                if (comment === null) return;
+            }
+
+            await fetch(`/validate/${originalIndex}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({approved, comment})
+            });
+
+            await loadResults();
+            showCurrentResult();
+            navigateNext();
+        }
+
+        // Filter
+        function getFilteredResults() {
+            if (showOnlyMatched) {
+                return results.filter(r => r.matching === 'Both');
+            }
+            return results;
+        }
+
+        function toggleFilter() {
+            showOnlyMatched = !showOnlyMatched;
+            const btn = document.getElementById('filter-btn');
+            if (showOnlyMatched) {
+                btn.innerHTML = '<i class="bi bi-funnel-fill"></i> Tous les fichiers';
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.innerHTML = '<i class="bi bi-funnel"></i> Fichiers correspondants';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-success');
+            }
+            currentIndex = 0;
+            updateResultsTable();
+            showCurrentResult();
+        }
+
+        // Update table
+        function updateResultsTable() {
+            const tbody = document.getElementById('results-tbody');
+            tbody.innerHTML = '';
+
+            const filtered = getFilteredResults();
+            filtered.forEach((result, index) => {
+                const row = document.createElement('tr');
+                row.style.cursor = 'pointer';
+                row.onclick = () => {
+                    currentIndex = index;
+                    showCurrentResult();
+                };
+
+                const validationClass = result.validation === 'Approved' ? 'bg-success text-white' :
+                                       result.validation === 'Auto-Approved' ? 'bg-info text-white' :
+                                       result.validation === 'Rejected' ? 'bg-danger text-white' : '';
+
+                row.innerHTML = `
+                    <td>${result.litho_code}</td>
+                    <td>${result.filename}</td>
+                    <td>${result.matching}</td>
+                    <td>${result.score !== null && result.score !== undefined ? Math.round(result.score) + '%' : 'N/A'}</td>
+                    <td><span class="badge ${validationClass}">${result.validation}</span></td>
+                    <td>${result.comment || ''}</td>
+                    <td><small>${result.date || ''}</small></td>
+                `;
+
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateTableSelection() {
+            const rows = document.querySelectorAll('#results-tbody tr');
+            rows.forEach((row, index) => {
+                if (index === currentIndex) {
+                    row.classList.add('table-row-selected');
+                    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    row.classList.remove('table-row-selected');
+                }
+            });
+        }
+
+        // Threshold slider
+        document.getElementById('threshold-slider').addEventListener('input', (e) => {
+            document.getElementById('threshold-display').textContent = e.target.value + '%';
+            updateThresholdLine();
+            showCurrentResult();
+        });
+
+        function updateThresholdLine() {
+            const threshold = document.getElementById('threshold-slider').value;
+            document.getElementById('threshold-line').style.left = threshold + '%';
+        }
+
+        // Copy litho code
+        function copyLithoCode() {
+            const code = document.getElementById('current-litho-code').textContent;
+            if (code !== '--') {
+                navigator.clipboard.writeText(code);
+                alert(`Code litho '${code}' copié!`);
+            }
+        }
+
+        // Export CSV
+        function exportCSV() {
+            window.location.href = '/export/csv';
+        }
+
+        // Copy to clipboard
+        async function copyToClipboard() {
+            let text = 'Code Litho\tFilename\tMatching\tScore (%)\tValidation\tComment\tDate\n';
+            results.forEach(r => {
+                text += `${r.litho_code}\t${r.filename}\t${r.matching}\t${r.score || 'N/A'}\t${r.validation}\t${r.comment}\t${r.date}\n`;
+            });
+            await navigator.clipboard.writeText(text);
+            alert('Données copiées dans le presse-papiers!');
+        }
+
+        // New analysis
+        function newAnalysis() {
+            if (confirm('Voulez-vous recommencer une nouvelle analyse?')) {
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

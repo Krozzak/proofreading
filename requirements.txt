@@ -1,0 +1,16 @@
+# Printer Proofreading - Dependencies
+# Install with: pip install -r requirements.txt
+
+# PDF rendering
+PyMuPDF>=1.21.0
+
+# Image processing
+Pillow>=9.0.0
+numpy>=1.21.0
+
+# Similarity calculation
+scikit-image>=0.19.0
+scipy>=1.7.0
+
+# GUI drag-and-drop support
+tkinterdnd2>=0.3.0

@@ -1,0 +1,649 @@
+/* =================================
+   L'ORÉAL - PRINTER PROOFREADING
+   Feuille de style principale
+   ================================= */
+
+:root {
+    --loreal-blue: #2649B2;
+    --loreal-light-blue: #4A74F3;
+    --loreal-purple: #9D5CE6;
+    --loreal-pink: #B55CE6;
+    --loreal-light: #D4D9F0;
+    --loreal-success: #28a745;
+    --loreal-warning: #ffc107;
+    --loreal-danger: #dc3545;
+    --loreal-info: #17a2b8;
+    
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.2);
+    
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+}
+
+/* =================================
+   GÉNÉRAL
+   ================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* =================================
+   HEADER / HERO
+   ================================= */
+
+.hero {
+    background: linear-gradient(135deg, var(--loreal-blue) 0%, var(--loreal-purple) 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 500px;
+    height: 500px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    bottom: -30%;
+    left: -5%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    animation: float 8s ease-in-out infinite reverse;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 1;
+}
+
+.hero .lead {
+    font-size: 1.3rem;
+    opacity: 0.95;
+    position: relative;
+    z-index: 1;
+}
+
+.hero i {
+    margin-right: 15px;
+    font-size: 3.5rem;
+}
+
+/* =================================
+   UPLOAD ZONES
+   ================================= */
+
+.upload-zone {
+    background: white;
+    border: 3px dashed var(--loreal-light);
+    border-radius: 20px;
+    padding: 3rem;
+    text-align: center;
+    transition: all var(--transition-normal);
+    cursor: pointer;
+    min-height: 280px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.upload-zone::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(74, 116, 243, 0.05) 0%, rgba(157, 92, 230, 0.05) 100%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+}
+
+.upload-zone:hover {
+    border-color: var(--loreal-blue);
+    background: #f8f9fa;
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.upload-zone:hover::before {
+    opacity: 1;
+}
+
+.upload-zone.dragover {
+    border-color: var(--loreal-purple);
+    background: linear-gradient(135deg, rgba(157, 92, 230, 0.1) 0%, rgba(74, 116, 243, 0.1) 100%);
+    transform: scale(1.02);
+}
+
+.upload-zone i {
+    font-size: 5rem;
+    color: var(--loreal-light-blue);
+    margin-bottom: 1.5rem;
+    transition: all var(--transition-normal);
+}
+
+.upload-zone:hover i {
+    color: var(--loreal-purple);
+    transform: scale(1.1) rotate(5deg);
+}
+
+.upload-zone h4 {
+    color: var(--loreal-blue);
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.upload-zone p {
+    color: #6c757d;
+    margin: 0;
+}
+
+.file-list {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-top: 1.5rem;
+    text-align: left;
+    padding: 0 1rem;
+}
+
+.file-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.file-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.file-list::-webkit-scrollbar-thumb {
+    background: var(--loreal-light-blue);
+    border-radius: 10px;
+}
+
+.file-list small {
+    display: block;
+    padding: 0.5rem;
+    background: #e8f5e9;
+    border-radius: 5px;
+    margin-top: 0.5rem;
+    font-weight: 500;
+}
+
+/* =================================
+   BOUTONS
+   ================================= */
+
+.btn-loreal {
+    background: linear-gradient(135deg, var(--loreal-blue) 0%, var(--loreal-purple) 100%);
+    color: white;
+    padding: 18px 50px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    transition: all var(--transition-normal);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-loreal::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-loreal:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn-loreal:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-loreal:active {
+    transform: translateY(-1px) scale(1.03);
+}
+
+.btn-loreal:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    opacity: 0.6;
+}
+
+.btn-loreal:disabled:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.btn-loreal i {
+    margin-right: 10px;
+    font-size: 1.4rem;
+}
+
+/* =================================
+   THRESHOLD CONTROL
+   ================================= */
+
+.threshold-control {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2.5rem;
+    border: 1px solid rgba(38, 73, 178, 0.1);
+    transition: all var(--transition-normal);
+}
+
+.threshold-control:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.threshold-control h5 {
+    color: var(--loreal-blue);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.threshold-control h5 i {
+    margin-right: 10px;
+    color: var(--loreal-purple);
+}
+
+.threshold-control .form-control {
+    border: 2px solid var(--loreal-light);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--loreal-blue);
+    transition: all var(--transition-fast);
+}
+
+.threshold-control .form-control:focus {
+    border-color: var(--loreal-purple);
+    box-shadow: 0 0 0 0.2rem rgba(157, 92, 230, 0.25);
+    outline: none;
+}
+
+.threshold-control .input-group-text {
+    background: var(--loreal-blue);
+    color: white;
+    border: none;
+    font-weight: 600;
+    font-size: 1.2rem;
+    padding: 12px 20px;
+    border-radius: 0 10px 10px 0;
+}
+
+/* =================================
+   PROGRESS / LOADING
+   ================================= */
+
+.progress-container {
+    display: none;
+    margin-top: 3rem;
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.spinner-border-custom {
+    width: 4rem;
+    height: 4rem;
+    border-width: 0.5rem;
+    border-color: var(--loreal-purple);
+    border-right-color: transparent;
+}
+
+.progress-container p {
+    margin-top: 1.5rem;
+    color: var(--loreal-blue);
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* =================================
+   STATISTICS CARDS
+   ================================= */
+
+.stats-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    border: 1px solid rgba(38, 73, 178, 0.1);
+    height: 100%;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-number {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--loreal-blue);
+    margin: 1rem 0;
+    line-height: 1;
+}
+
+.stats-card i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stats-card p {
+    margin: 0;
+    color: #6c757d;
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+.stats-card .btn {
+    margin-bottom: 0.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    padding: 10px;
+    transition: all var(--transition-fast);
+}
+
+.stats-card .btn:hover {
+    transform: scale(1.05);
+}
+
+/* =================================
+   RESULT CARDS
+   ================================= */
+
+.result-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-normal);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    animation: slideIn 0.5s ease;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--loreal-light);
+}
+
+.result-card h5 {
+    color: var(--loreal-blue);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.result-card h5 i {
+    margin-right: 10px;
+    color: var(--loreal-purple);
+}
+
+.result-card h6 {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+}
+
+/* =================================
+   SCORE BADGES
+   ================================= */
+
+.score-badge {
+    font-size: 1.8rem;
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 700;
+    display: inline-block;
+    box-shadow: var(--shadow-sm);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.score-excellent {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.score-good {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+    color: #333;
+}
+
+.score-poor {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+/* =================================
+   IMAGE PREVIEWS
+   ================================= */
+
+.image-preview {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-normal);
+    cursor: pointer;
+}
+
+.image-preview:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-lg);
+}
+
+/* =================================
+   BADGES
+   ================================= */
+
+.badge {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+}
+
+.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+}
+
+.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%) !important;
+}
+
+/* =================================
+   RESPONSIVE
+   ================================= */
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .hero .lead {
+        font-size: 1rem;
+    }
+    
+    .upload-zone {
+        min-height: 200px;
+        padding: 2rem 1rem;
+    }
+    
+    .upload-zone i {
+        font-size: 3rem;
+    }
+    
+    .btn-loreal {
+        padding: 15px 30px;
+        font-size: 1.1rem;
+    }
+    
+    .stats-number {
+        font-size: 2.5rem;
+    }
+    
+    .threshold-control {
+        padding: 1.5rem;
+    }
+    
+    .result-card {
+        padding: 1.5rem;
+    }
+    
+    .score-badge {
+        font-size: 1.3rem;
+        padding: 8px 15px;
+    }
+}
+
+/* =================================
+   UTILITY CLASSES
+   ================================= */
+
+.fade-in {
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.text-loreal {
+    color: var(--loreal-blue) !important;
+}
+
+.text-loreal-purple {
+    color: var(--loreal-purple) !important;
+}
+
+.bg-loreal {
+    background: var(--loreal-blue) !important;
+}
+
+.bg-loreal-purple {
+    background: var(--loreal-purple) !important;
+}
+
+.shadow-loreal {
+    box-shadow: var(--shadow-md) !important;
+}
+
+.border-loreal {
+    border-color: var(--loreal-light) !important;
+}
+
+/* =================================
+   SCROLLBAR PERSONNALISÉE
+   ================================= */
+
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--loreal-blue) 0%, var(--loreal-purple) 100%);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--loreal-purple);
+}
