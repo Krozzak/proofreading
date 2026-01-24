@@ -62,12 +62,14 @@ scipy>=1.7.0
 ### 1. Select Folders
 
 Launch the application and drag-and-drop (or click to browse) two folders:
+
 - **DOSSIER DESIGN (ORIGINAL)**: Contains the original design PDFs
 - **DOSSIER IMPRIMEUR**: Contains the printer proof PDFs
 
 ### 2. File Matching
 
 Files are automatically matched using an **8-character prefix** system:
+
 - `12345678_design_v1.pdf` matches `12345678_printer.pdf`
 - Both files share the same litho code (first 8 characters)
 
@@ -94,6 +96,7 @@ The tool uses a hybrid detection approach:
 3. **Fallback**: Uses full image when detection confidence is low
 
 Visual indicators show detection confidence:
+
 - Green outline: High confidence (>70%)
 - Yellow outline: Medium confidence (50-70%)
 - Gray button: Full image used (detection uncertain)
@@ -101,6 +104,7 @@ Visual indicators show detection confidence:
 ### Manual Crop Adjustment
 
 When automatic detection fails:
+
 1. Click "Ajuster zone..."
 2. Select "Ajuster Original" or "Ajuster Imprimeur"
 3. Draw a rectangle around the content area
@@ -127,9 +131,6 @@ PROOFREADING/
 ????????? proofreading_v3.py      # Main application (recommended)
 ????????? proofreading_v2.py      # Previous version
 ????????? proofreading.py         # Legacy version
-????????? STANDALONE_EXE/         # Tkinter desktop build
-???   ????????? printer_proofreading.py
-???   ????????? requirements.txt
 ????????? PROOFREADING_WEB/       # Flask web application
     ????????? app.py
     ????????? launcher.py
@@ -198,16 +199,19 @@ Output: `dist/LorealProofreading/LorealProofreading.exe`
 ### Common Issues
 
 **"Could not load PDF"**
+
 - Ensure the file is a valid PDF
 - Check file permissions
 - Try opening the file in another PDF viewer
 
 **Low similarity scores for identical content**
+
 - Use manual crop adjustment to exclude margins
 - Disable auto-detection if results are inconsistent
 - Check that both PDFs have the same page count
 
 **Application won't start**
+
 - Verify Python version (3.8+)
 - Reinstall dependencies: `pip install -r requirements.txt --force-reinstall`
 - Check for tkinterdnd2 compatibility issues
@@ -241,6 +245,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Version History
 
 ### v3.0.0 (Current)
+
 - Smart content detection (threshold + edge-based)
 - Manual crop adjustment interface
 - Multi-page PDF support with per-page validation
@@ -248,12 +253,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Improved UI with compact similarity bar
 
 ### v2.0.0
+
 - Basic SSIM comparison
 - Side-by-side view
 - CSV export
 - 8-character code matching
 
 ### v1.0.0
+
 - Initial release
 - Single-page comparison
 - Basic validation workflow
