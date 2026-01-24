@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -40,10 +40,7 @@ export default function ComparePage() {
     setIsAnalyzing,
   } = useAppStore();
 
-  const [originalImage, setOriginalImage] = useState<string | null>(null);
-  const [printerImage, setPrinterImage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [processedCount, setProcessedCount] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // Redirect if no files
   useEffect(() => {
@@ -54,64 +51,57 @@ export default function ComparePage() {
     }
   }, [pairs, router, setIsAnalyzing]);
 
-  // Get current pair - memoized to avoid unnecessary re-renders
+  // Get current pair
   const currentPair = pairs[currentIndex];
 
-  // Load images when current pair or page changes
-  const loadImages = useCallback(async () => {
-    if (!currentPair) return;
+  // Create URLs for PDF display (no server call needed!)
+  const originalPdfUrl = useMemo(() => {
+    const file = currentPair?.originalFile?.file;
+    return file ? URL.createObjectURL(file) : null;
+  }, [currentPair?.originalFile?.file]);
 
-    setIsLoading(true);
-    setOriginalImage(null);
-    setPrinterImage(null);
+  const printerPdfUrl = useMemo(() => {
+    const file = currentPair?.printerFile?.file;
+    return file ? URL.createObjectURL(file) : null;
+  }, [currentPair?.printerFile?.file]);
 
+  // Cleanup URLs when they change
+  useEffect(() => {
+    return () => {
+      if (originalPdfUrl) URL.revokeObjectURL(originalPdfUrl);
+      if (printerPdfUrl) URL.revokeObjectURL(printerPdfUrl);
+    };
+  }, [originalPdfUrl, printerPdfUrl]);
+
+  // Calculate similarity on demand (only when user clicks button)
+  const handleCalculateSimilarity = async () => {
+    if (!currentPair?.originalFile?.file || !currentPair?.printerFile?.file) {
+      return;
+    }
+
+    setIsCalculating(true);
     try {
-      // Get the actual File objects from the pair
-      const originalFile = currentPair.originalFile?.file || null;
-      const printerFile = currentPair.printerFile?.file || null;
+      // Convert both PDFs to images
+      const origBase64 = await fileToBase64(currentPair.originalFile.file);
+      const printBase64 = await fileToBase64(currentPair.printerFile.file);
 
-      let origImg: string | null = null;
-      let printImg: string | null = null;
+      const [origResult, printResult] = await Promise.all([
+        convertPdfToImage(origBase64, currentPage),
+        convertPdfToImage(printBase64, currentPage),
+      ]);
 
-      // Convert PDFs to images
-      if (originalFile) {
-        const base64 = await fileToBase64(originalFile);
-        const result = await convertPdfToImage(base64, currentPage);
-        if (result) {
-          origImg = result.image;
-        }
-      }
-
-      if (printerFile) {
-        const base64 = await fileToBase64(printerFile);
-        const result = await convertPdfToImage(base64, currentPage);
-        if (result) {
-          printImg = result.image;
-        }
-      }
-
-      setOriginalImage(origImg);
-      setPrinterImage(printImg);
-
-      // Calculate similarity if both images exist
-      if (origImg && printImg) {
-        const comparison = await compareImages(origImg, printImg);
+      if (origResult && printResult) {
+        const comparison = await compareImages(origResult.image, printResult.image);
         if (comparison) {
           updatePairSimilarity(currentIndex, comparison.similarity);
         }
       }
     } catch (error) {
-      console.error('Error loading images:', error);
+      console.error('Error calculating similarity:', error);
     } finally {
-      setIsLoading(false);
+      setIsCalculating(false);
     }
-    // Only depend on currentIndex and currentPage, not the entire pairs array
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, currentPage]);
-
-  useEffect(() => {
-    loadImages();
-  }, [loadImages]);
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -280,18 +270,11 @@ export default function ComparePage() {
 
       {/* Main comparison area */}
       <div className="flex-1 p-6 overflow-hidden">
-        {isLoading ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin text-4xl mb-4">⏳</div>
-              <p className="text-muted-foreground">Chargement des images...</p>
-            </div>
-          </div>
-        ) : currentPair ? (
+        {currentPair ? (
           <ComparisonView
             pair={currentPair}
-            originalImage={originalImage}
-            printerImage={printerImage}
+            originalPdfUrl={originalPdfUrl}
+            printerPdfUrl={printerPdfUrl}
             currentPage={currentPage}
             threshold={threshold}
             onApprove={handleApprove}
@@ -302,6 +285,8 @@ export default function ComparePage() {
             onNextPair={goToNextPair}
             hasPrevPair={currentIndex > 0}
             hasNextPair={currentIndex < pairs.length - 1}
+            onCalculateSimilarity={handleCalculateSimilarity}
+            isCalculating={isCalculating}
           />
         ) : null}
       </div>

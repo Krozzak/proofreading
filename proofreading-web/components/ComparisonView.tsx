@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { SimilarityBar } from '@/components/SimilarityBar';
@@ -10,8 +9,8 @@ import type { ComparisonPair } from '@/lib/types';
 
 interface ComparisonViewProps {
   pair: ComparisonPair;
-  originalImage: string | null;
-  printerImage: string | null;
+  originalPdfUrl: string | null;
+  printerPdfUrl: string | null;
   currentPage: number;
   threshold: number;
   onApprove: () => void;
@@ -22,12 +21,14 @@ interface ComparisonViewProps {
   onNextPair: () => void;
   hasPrevPair: boolean;
   hasNextPair: boolean;
+  onCalculateSimilarity: () => void;
+  isCalculating: boolean;
 }
 
 export function ComparisonView({
   pair,
-  originalImage,
-  printerImage,
+  originalPdfUrl,
+  printerPdfUrl,
   currentPage,
   threshold,
   onApprove,
@@ -38,6 +39,8 @@ export function ComparisonView({
   onNextPair,
   hasPrevPair,
   hasNextPair,
+  onCalculateSimilarity,
+  isCalculating,
 }: ComparisonViewProps) {
   const [rejectComment, setRejectComment] = useState('');
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -66,6 +69,9 @@ export function ComparisonView({
     (v) => v.status !== null
   ).length;
 
+  // Check if both files exist for similarity calculation
+  const canCalculateSimilarity = originalPdfUrl && printerPdfUrl;
+
   return (
     <div className="flex flex-col gap-4 h-full">
       {/* Header with code and similarity */}
@@ -78,14 +84,31 @@ export function ComparisonView({
           </span>
         </div>
 
-        {/* Similarity bar */}
-        <div className="flex-1">
+        {/* Similarity bar or calculate button */}
+        <div className="flex-1 flex items-center gap-4">
           {pair.similarity !== null ? (
             <SimilarityBar
               score={pair.similarity}
               threshold={threshold}
               size="md"
             />
+          ) : canCalculateSimilarity ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onCalculateSimilarity}
+              disabled={isCalculating}
+              className="bg-white/20 hover:bg-white/30"
+            >
+              {isCalculating ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Calcul en cours...
+                </>
+              ) : (
+                <>📊 Calculer la similarité</>
+              )}
+            </Button>
           ) : (
             <div className="text-center text-white/70">
               Fichier manquant - Comparaison impossible
@@ -100,36 +123,32 @@ export function ComparisonView({
         </div>
       </div>
 
-      {/* Images side by side */}
+      {/* PDFs side by side */}
       <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
         {/* Original */}
         <Card className="flex flex-col overflow-hidden">
           <div className="bg-primary text-white py-2 px-4 text-center font-semibold">
             ORIGINAL
           </div>
-          <div className="flex-1 relative bg-muted flex items-center justify-center p-4 min-h-[300px]">
-            {originalImage ? (
-              <Image
-                src={originalImage}
-                alt="Original PDF"
-                fill
-                className="object-contain p-2"
-                unoptimized
+          <div className="flex-1 relative bg-muted min-h-[400px]">
+            {originalPdfUrl ? (
+              <embed
+                src={`${originalPdfUrl}#page=${currentPage + 1}&toolbar=0&navpanes=0`}
+                type="application/pdf"
+                className="w-full h-full"
+                style={{ minHeight: '400px' }}
               />
             ) : (
-              <div className="text-muted-foreground text-center">
-                <div className="text-4xl mb-2">📄</div>
-                <p>Pas de fichier original</p>
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📄</div>
+                  <p>Pas de fichier original</p>
+                </div>
               </div>
             )}
           </div>
-          <div className="py-2 px-4 text-center text-sm text-muted-foreground border-t">
+          <div className="py-2 px-4 text-center text-sm text-muted-foreground border-t truncate">
             {pair.originalFile?.name || 'Aucun fichier'}
-            {pair.totalPagesOriginal > 1 && (
-              <span className="ml-2 font-medium">
-                Page {currentPage + 1}/{pair.totalPagesOriginal}
-              </span>
-            )}
           </div>
         </Card>
 
@@ -138,29 +157,25 @@ export function ComparisonView({
           <div className="bg-secondary text-white py-2 px-4 text-center font-semibold">
             IMPRIMEUR
           </div>
-          <div className="flex-1 relative bg-muted flex items-center justify-center p-4 min-h-[300px]">
-            {printerImage ? (
-              <Image
-                src={printerImage}
-                alt="Printer PDF"
-                fill
-                className="object-contain p-2"
-                unoptimized
+          <div className="flex-1 relative bg-muted min-h-[400px]">
+            {printerPdfUrl ? (
+              <embed
+                src={`${printerPdfUrl}#page=${currentPage + 1}&toolbar=0&navpanes=0`}
+                type="application/pdf"
+                className="w-full h-full"
+                style={{ minHeight: '400px' }}
               />
             ) : (
-              <div className="text-muted-foreground text-center">
-                <div className="text-4xl mb-2">📄</div>
-                <p>Pas de fichier imprimeur</p>
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📄</div>
+                  <p>Pas de fichier imprimeur</p>
+                </div>
               </div>
             )}
           </div>
-          <div className="py-2 px-4 text-center text-sm text-muted-foreground border-t">
+          <div className="py-2 px-4 text-center text-sm text-muted-foreground border-t truncate">
             {pair.printerFile?.name || 'Aucun fichier'}
-            {pair.totalPagesPrinter > 1 && (
-              <span className="ml-2 font-medium">
-                Page {currentPage + 1}/{pair.totalPagesPrinter}
-              </span>
-            )}
           </div>
         </Card>
       </div>
