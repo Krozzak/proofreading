@@ -4,6 +4,7 @@ export interface FileInfo {
   name: string;
   path: string;
   code: string; // 8-character code extracted from filename
+  file?: File; // The actual File object for reading content
 }
 
 export interface ComparisonPair {

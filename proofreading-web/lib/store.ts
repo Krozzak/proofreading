@@ -189,12 +189,14 @@ export function createPairsFromFiles(
         name: file.name,
         path: file.name,
         code,
+        file, // Store the actual File object
       },
       printerFile: matchingPrinter
         ? {
             name: matchingPrinter.name,
             path: matchingPrinter.name,
             code,
+            file: matchingPrinter, // Store the actual File object
           }
         : null,
       similarity: null,
@@ -219,6 +221,7 @@ export function createPairsFromFiles(
           name: file.name,
           path: file.name,
           code,
+          file, // Store the actual File object
         },
         similarity: null,
         totalPagesOriginal: 0,

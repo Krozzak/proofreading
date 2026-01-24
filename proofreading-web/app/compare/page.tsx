@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -24,8 +25,6 @@ export default function ComparePage() {
     currentIndex,
     currentPage,
     threshold,
-    originalFiles,
-    printerFiles,
     showMatchedOnly,
     setCurrentIndex,
     setCurrentPage,
@@ -55,30 +54,24 @@ export default function ComparePage() {
     }
   }, [pairs, router, setIsAnalyzing]);
 
+  // Get current pair - memoized to avoid unnecessary re-renders
+  const currentPair = pairs[currentIndex];
+
   // Load images when current pair or page changes
   const loadImages = useCallback(async () => {
-    if (pairs.length === 0) return;
-
-    const pair = pairs[currentIndex];
-    if (!pair) return;
+    if (!currentPair) return;
 
     setIsLoading(true);
     setOriginalImage(null);
     setPrinterImage(null);
 
     try {
-      // Find the actual File objects
-      const originalFile = pair.originalFile
-        ? originalFiles.find((f) => f.name === pair.originalFile?.name)
-        : null;
-      const printerFile = pair.printerFile
-        ? printerFiles.find((f) => f.name === pair.printerFile?.name)
-        : null;
+      // Get the actual File objects from the pair
+      const originalFile = currentPair.originalFile?.file || null;
+      const printerFile = currentPair.printerFile?.file || null;
 
       let origImg: string | null = null;
       let printImg: string | null = null;
-      let origPages = 1;
-      let printPages = 1;
 
       // Convert PDFs to images
       if (originalFile) {
@@ -86,7 +79,6 @@ export default function ComparePage() {
         const result = await convertPdfToImage(base64, currentPage);
         if (result) {
           origImg = result.image;
-          origPages = result.totalPages;
         }
       }
 
@@ -95,17 +87,11 @@ export default function ComparePage() {
         const result = await convertPdfToImage(base64, currentPage);
         if (result) {
           printImg = result.image;
-          printPages = result.totalPages;
         }
       }
 
       setOriginalImage(origImg);
       setPrinterImage(printImg);
-
-      // Update page counts in pair if needed
-      if (origPages > 1 || printPages > 1) {
-        // Update pair with page counts (would need store update)
-      }
 
       // Calculate similarity if both images exist
       if (origImg && printImg) {
@@ -119,7 +105,9 @@ export default function ComparePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [pairs, currentIndex, currentPage, originalFiles, printerFiles, updatePairSimilarity]);
+    // Only depend on currentIndex and currentPage, not the entire pairs array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, currentPage]);
 
   useEffect(() => {
     loadImages();
@@ -238,8 +226,6 @@ export default function ComparePage() {
     router.push('/');
   };
 
-  const currentPair = pairs[currentIndex];
-
   if (pairs.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -258,7 +244,14 @@ export default function ComparePage() {
       {/* Header */}
       <header className="bg-primary text-white py-3 px-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">PRINTER PROOFREADING</h1>
+          <Image
+            src="/logo.png"
+            alt="ProofsLab Logo"
+            width={40}
+            height={40}
+            className="drop-shadow-lg"
+          />
+          <h1 className="text-xl font-bold">ProofsLab</h1>
           <span className="text-sm opacity-70">
             {currentIndex + 1} / {pairs.length} fichiers
           </span>
