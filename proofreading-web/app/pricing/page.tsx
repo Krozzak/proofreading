@@ -4,7 +4,7 @@
  * Pricing page with plan comparison and checkout.
  */
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ const MONTHLY_PRICE = 4.99;
 const YEARLY_PRICE = 47.90;
 const YEARLY_SAVINGS = Math.round((MONTHLY_PRICE * 12 - YEARLY_PRICE) * 100) / 100;
 
-export default function PricingPage() {
+function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading, getIdToken, quota } = useAuth();
@@ -342,5 +342,28 @@ export default function PricingPage() {
 
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
     </main>
+  );
+}
+
+function PricingLoading() {
+  return (
+    <main className="min-h-screen flex flex-col bg-background">
+      <header className="bg-primary text-white py-6 px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="w-48 h-8 bg-white/10 animate-pulse rounded" />
+        </div>
+      </header>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    </main>
+  );
+}
+
+export default function PricingPage() {
+  return (
+    <Suspense fallback={<PricingLoading />}>
+      <PricingContent />
+    </Suspense>
   );
 }

@@ -5,7 +5,7 @@
  * Shows quota usage, account info, upgrade options, and subscription management.
  */
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ import {
   type SubscriptionInfo,
 } from '@/lib/stripe';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading, quota, refreshQuota, signOut, getIdToken } = useAuth();
@@ -396,5 +396,28 @@ export default function DashboardPage() {
         <p>ProofsLab v1.2.0 - PDF Comparison Laboratory</p>
       </footer>
     </main>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <main className="min-h-screen flex flex-col">
+      <header className="bg-primary text-white py-6 px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="w-48 h-8 bg-white/10 animate-pulse rounded" />
+        </div>
+      </header>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
