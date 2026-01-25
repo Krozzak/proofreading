@@ -242,6 +242,7 @@ export default function ComparePage() {
             className="drop-shadow-lg"
           />
           <h1 className="text-xl font-bold">ProofsLab</h1>
+          <span className="text-xs opacity-50">v1.1.0</span>
           <span className="text-sm opacity-70">
             {currentIndex + 1} / {pairs.length} fichiers
           </span>

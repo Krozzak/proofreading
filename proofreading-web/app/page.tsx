@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -39,13 +40,22 @@ export default function HomePage() {
     <main className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="bg-primary text-white py-6 px-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-3xl font-bold tracking-tight">
-            PRINTER PROOFREADING
-          </h1>
-          <p className="mt-2 text-primary-foreground/80">
-            Comparez vos fichiers imprimés avec les originaux
-          </p>
+        <div className="max-w-6xl mx-auto flex items-center justify-center gap-4">
+          <Image
+            src="/logo.png"
+            alt="ProofsLab Logo"
+            width={56}
+            height={56}
+            className="drop-shadow-lg"
+          />
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-tight">
+              ProofsLab <span className="text-sm opacity-50 font-normal">v1.1.0</span>
+            </h1>
+            <p className="text-primary-foreground/80">
+              PDF Comparison Laboratory
+            </p>
+          </div>
         </div>
       </header>
 
@@ -130,7 +140,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        <p>Printer Proofreading v4.0 • Comparaison SSIM</p>
+        <p>ProofsLab v1.0 • PDF Comparison Laboratory</p>
       </footer>
     </main>
   );

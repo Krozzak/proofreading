@@ -132,10 +132,10 @@ export function ComparisonView({
           </div>
           <div className="flex-1 relative bg-muted min-h-[400px]">
             {originalPdfUrl ? (
-              <embed
-                src={`${originalPdfUrl}#page=${currentPage + 1}&toolbar=0&navpanes=0`}
-                type="application/pdf"
-                className="w-full h-full"
+              <iframe
+                src={originalPdfUrl}
+                title="Original PDF"
+                className="w-full h-full border-0"
                 style={{ minHeight: '400px' }}
               />
             ) : (
@@ -159,10 +159,10 @@ export function ComparisonView({
           </div>
           <div className="flex-1 relative bg-muted min-h-[400px]">
             {printerPdfUrl ? (
-              <embed
-                src={`${printerPdfUrl}#page=${currentPage + 1}&toolbar=0&navpanes=0`}
-                type="application/pdf"
-                className="w-full h-full"
+              <iframe
+                src={printerPdfUrl}
+                title="Printer PDF"
+                className="w-full h-full border-0"
                 style={{ minHeight: '400px' }}
               />
             ) : (
