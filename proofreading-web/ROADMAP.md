@@ -72,7 +72,9 @@ Ces améliorations ont été identifiées lors des tests et seront implémentée
 | Affichage quota utilisateur (header) | Fait | 25/01/2026 |
 | Secret Manager pour Firebase Admin | Fait | 25/01/2026 |
 | Backend v2.1.0 déployé | Fait | 25/01/2026 |
-| Dashboard utilisateur (historique) | À faire | - |
+| Dashboard utilisateur (/dashboard) | Fait | 25/01/2026 |
+| CORS regex pour Vercel previews | Fait | 25/01/2026 |
+| Création base Firestore europe-west1 | Fait | 25/01/2026 |
 
 **Implémentation technique**:
 
@@ -84,8 +86,18 @@ Ces améliorations ont été identifiées lors des tests et seront implémentée
 **Services utilisés**:
 
 - Firebase Auth (gratuit jusqu'à 50k users/mois)
-- Firestore (gratuit jusqu'à 50k lectures/jour)
+- Firestore (gratuit jusqu'à 50k lectures/jour) - Region: `europe-west1`
 - Secret Manager (gratuit jusqu'à 10k accès/mois)
+
+**Configuration CORS**:
+
+Le backend accepte les origines suivantes :
+
+- `http://localhost:3000` (développement local)
+- `https://proofslab.vercel.app`
+- `https://proofslab.com`
+- `https://www.proofslab.com`
+- `https://*.vercel.app` (regex pour les previews Vercel)
 
 ---
 
