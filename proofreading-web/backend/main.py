@@ -36,6 +36,7 @@ app = FastAPI(
 )
 
 # CORS configuration - restrict to known domains
+# Note: allow_origin_regex is used to support Vercel preview deployments
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://proofslab.vercel.app",
@@ -43,9 +44,13 @@ ALLOWED_ORIGINS = [
     "https://www.proofslab.com",
 ]
 
+# Regex to match Vercel preview URLs (e.g., proofreading-xxx-thomas-silliards-projects.vercel.app)
+ALLOWED_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
