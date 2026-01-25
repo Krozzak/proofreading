@@ -13,3 +13,6 @@ scikit-image>=0.21.0
 
 # Firebase Admin SDK (authentication & Firestore)
 firebase-admin>=6.2.0
+
+# Stripe payments
+stripe>=7.0.0

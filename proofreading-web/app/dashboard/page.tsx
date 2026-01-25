@@ -2,21 +2,37 @@
 
 /**
  * User dashboard page.
- * Shows quota usage, account info, and upgrade options.
+ * Shows quota usage, account info, upgrade options, and subscription management.
  */
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/lib/auth-context';
+import {
+  redirectToCheckout,
+  redirectToCustomerPortal,
+  getSubscription,
+  formatPeriodEnd,
+  getStatusLabel,
+  getStatusColor,
+  type SubscriptionInfo,
+} from '@/lib/stripe';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, loading, quota, refreshQuota, signOut } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, loading, quota, refreshQuota, signOut, getIdToken } = useAuth();
+  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  // Check for successful upgrade
+  const upgraded = searchParams.get('upgraded');
 
   // Redirect if not logged in
   useEffect(() => {
@@ -25,12 +41,53 @@ export default function DashboardPage() {
     }
   }, [loading, user, router]);
 
-  // Refresh quota on mount
+  // Refresh quota and subscription on mount
   useEffect(() => {
     if (user) {
       refreshQuota();
+
+      // Fetch subscription info
+      const fetchSubscription = async () => {
+        try {
+          const token = await getIdToken();
+          if (token) {
+            const sub = await getSubscription(token);
+            setSubscription(sub);
+          }
+        } catch (e) {
+          // Subscription fetch failed, not critical
+          console.error('Failed to fetch subscription:', e);
+        }
+      };
+      fetchSubscription();
     }
-  }, [user, refreshQuota]);
+  }, [user, refreshQuota, getIdToken]);
+
+  const handleUpgrade = async () => {
+    setUpgradeLoading(true);
+    try {
+      const token = await getIdToken();
+      if (token) {
+        await redirectToCheckout(token, 'yearly');
+      }
+    } catch (e) {
+      console.error('Upgrade failed:', e);
+    }
+    setUpgradeLoading(false);
+  };
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const token = await getIdToken();
+      if (token) {
+        await redirectToCustomerPortal(token);
+      }
+    } catch (e) {
+      console.error('Portal redirect failed:', e);
+    }
+    setPortalLoading(false);
+  };
 
   // Loading state
   if (loading || !user) {
@@ -90,6 +147,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
+
+      {/* Success message after upgrade */}
+      {upgraded && (
+        <div className="max-w-4xl mx-auto w-full px-8 pt-6">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <p className="text-green-800 font-medium">
+              Bienvenue dans le plan Pro ! Vous avez maintenant 100 comparaisons/jour.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <div className="flex-1 max-w-4xl mx-auto w-full px-8 py-12">
@@ -210,11 +278,11 @@ export default function DashboardPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
-                      Analyse IA des différences
+                      Analyse IA des différences (bientôt)
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
-                      Rapports automatiques
+                      Rapports automatiques (bientôt)
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="text-green-500">✓</span>
@@ -224,16 +292,78 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-primary">
-                    $9.99
+                    $4.99
                     <span className="text-sm font-normal text-muted-foreground">
                       /mois
                     </span>
                   </div>
-                  <Button className="mt-4" size="lg" disabled>
-                    Bientôt disponible
+                  <p className="text-xs text-muted-foreground">
+                    ou $47.90/an (-20%)
+                  </p>
+                  <Button
+                    className="mt-4"
+                    size="lg"
+                    disabled={upgradeLoading}
+                    onClick={handleUpgrade}
+                  >
+                    {upgradeLoading ? 'Redirection...' : 'Passer au Pro'}
                   </Button>
+                  <Link href="/pricing" className="block mt-2 text-sm text-primary hover:underline">
+                    Voir tous les plans
+                  </Link>
                 </div>
               </div>
+            </Card>
+          )}
+
+          {/* Subscription Management (if Pro) */}
+          {isPro && subscription && subscription.status !== 'none' && (
+            <Card className="p-6">
+              <h2 className="text-xl font-semibold mb-4">Gestion de l&apos;abonnement</h2>
+              <div className="grid gap-4">
+                <div className="flex justify-between items-center py-2 border-b">
+                  <span className="text-muted-foreground">Statut</span>
+                  <span className={`font-medium ${getStatusColor(subscription.status)}`}>
+                    {getStatusLabel(subscription.status)}
+                  </span>
+                </div>
+                {subscription.billingPeriod && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">Facturation</span>
+                    <span className="font-medium">
+                      {subscription.billingPeriod === 'yearly' ? 'Annuelle' : 'Mensuelle'}
+                    </span>
+                  </div>
+                )}
+                {subscription.currentPeriodEnd && (
+                  <div className="flex justify-between items-center py-2 border-b">
+                    <span className="text-muted-foreground">
+                      {subscription.cancelAtPeriodEnd
+                        ? 'Accès jusqu\'au'
+                        : 'Prochain renouvellement'}
+                    </span>
+                    <span className="font-medium">
+                      {formatPeriodEnd(subscription.currentPeriodEnd)}
+                    </span>
+                  </div>
+                )}
+                {subscription.cancelAtPeriodEnd && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-yellow-800">
+                      Votre abonnement ne sera pas renouvelé. Vous conserverez l&apos;accès Pro
+                      jusqu&apos;à la date indiquée.
+                    </p>
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                className="mt-4"
+                disabled={portalLoading}
+                onClick={handleManageSubscription}
+              >
+                {portalLoading ? 'Redirection...' : 'Gérer mon abonnement'}
+              </Button>
             </Card>
           )}
 

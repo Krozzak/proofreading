@@ -7,8 +7,8 @@ Deploy to Google Cloud Run for serverless execution.
 """
 
 import base64
-from typing import Optional
-from fastapi import FastAPI, HTTPException, Depends, Request
+from typing import Optional, Literal
+from fastapi import FastAPI, HTTPException, Depends, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -26,6 +26,16 @@ from services.quota_service import (
     check_and_increment_quota,
     get_anonymous_quota,
     check_and_increment_anonymous_quota
+)
+from services.stripe_service import (
+    create_checkout_session,
+    create_customer_portal_session,
+    get_subscription_info,
+    verify_webhook_signature,
+    handle_checkout_completed,
+    handle_subscription_updated,
+    handle_subscription_deleted,
+    handle_invoice_payment_failed,
 )
 
 # Initialize FastAPI app
@@ -119,6 +129,33 @@ class QuotaResponse(BaseModel):
     limit: int
     remaining: int
     resetsAt: str
+
+
+# Stripe models
+class CheckoutRequest(BaseModel):
+    billingPeriod: Literal['monthly', 'yearly'] = 'monthly'
+    successUrl: str
+    cancelUrl: str
+
+
+class CheckoutResponse(BaseModel):
+    url: str
+
+
+class PortalRequest(BaseModel):
+    returnUrl: str
+
+
+class PortalResponse(BaseModel):
+    url: str
+
+
+class SubscriptionResponse(BaseModel):
+    status: str
+    currentPeriodEnd: str | None
+    cancelAtPeriodEnd: bool
+    tier: str
+    billingPeriod: str | None
 
 
 # Endpoints
@@ -256,6 +293,132 @@ async def compare_images(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Stripe endpoints
+
+@app.post("/api/stripe/checkout", response_model=CheckoutResponse)
+async def stripe_create_checkout(
+    request: CheckoutRequest,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Create a Stripe Checkout session for Pro subscription.
+    PROTECTED - Requires authentication.
+
+    Args:
+        request: CheckoutRequest with billing period and redirect URLs
+
+    Returns:
+        CheckoutResponse with checkout session URL
+    """
+    try:
+        checkout_url = create_checkout_session(
+            uid=user.uid,
+            email=user.email,
+            billing_period=request.billingPeriod,
+            success_url=request.successUrl,
+            cancel_url=request.cancelUrl,
+        )
+        return CheckoutResponse(url=checkout_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Checkout session error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create checkout session")
+
+
+@app.post("/api/stripe/portal", response_model=PortalResponse)
+async def stripe_create_portal(
+    request: PortalRequest,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Create a Stripe Customer Portal session.
+    PROTECTED - Requires authentication.
+
+    Args:
+        request: PortalRequest with return URL
+
+    Returns:
+        PortalResponse with customer portal URL
+    """
+    try:
+        portal_url = create_customer_portal_session(
+            uid=user.uid,
+            return_url=request.returnUrl,
+        )
+        return PortalResponse(url=portal_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Portal session error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to create portal session")
+
+
+@app.get("/api/subscription", response_model=SubscriptionResponse)
+async def get_user_subscription(
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Get current user's subscription information.
+    PROTECTED - Requires authentication.
+
+    Returns:
+        SubscriptionResponse with subscription details and user tier
+    """
+    info = get_subscription_info(user.uid)
+    return SubscriptionResponse(
+        status=info['status'],
+        currentPeriodEnd=info['currentPeriodEnd'],
+        cancelAtPeriodEnd=info['cancelAtPeriodEnd'],
+        tier=user.tier,
+        billingPeriod=info['billingPeriod'],
+    )
+
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(
+    request: Request,
+    stripe_signature: str = Header(alias="Stripe-Signature")
+):
+    """
+    Handle Stripe webhook events.
+    PUBLIC - No authentication (uses webhook signature verification).
+
+    This endpoint receives events from Stripe and updates user subscriptions
+    in Firestore accordingly.
+    """
+    payload = await request.body()
+
+    try:
+        event = verify_webhook_signature(payload, stripe_signature)
+    except ValueError as e:
+        logger.warning(f"Webhook verification failed: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Handle events
+    event_type = event['type']
+    data = event['data']['object']
+
+    logger.info(f"Received Stripe webhook: {event_type}")
+
+    try:
+        if event_type == 'checkout.session.completed':
+            handle_checkout_completed(data)
+        elif event_type in ['customer.subscription.created', 'customer.subscription.updated']:
+            handle_subscription_updated(data)
+        elif event_type == 'customer.subscription.deleted':
+            handle_subscription_deleted(data)
+        elif event_type == 'invoice.payment_failed':
+            handle_invoice_payment_failed(data)
+        else:
+            logger.info(f"Unhandled webhook event: {event_type}")
+    except Exception as e:
+        logger.error(f"Webhook handler error: {e}", exc_info=True)
+        # Return 200 to prevent Stripe retries for non-recoverable errors
+
+    return {"received": True}
 
 
 # For local development

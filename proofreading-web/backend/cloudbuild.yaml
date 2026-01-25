@@ -51,7 +51,7 @@ steps:
       - '--max-instances'
       - '10'
       - '--set-secrets'
-      - 'FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest'
+      - 'FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,STRIPE_PRICE_ID_MONTHLY=stripe-price-monthly:latest,STRIPE_PRICE_ID_YEARLY=stripe-price-yearly:latest'
 
 # Store images in Container Registry
 images:
