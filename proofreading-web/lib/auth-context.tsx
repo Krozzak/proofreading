@@ -3,6 +3,8 @@
 /**
  * Authentication context provider using Firebase Auth.
  * Provides user state, quota info, and auth methods to the app.
+ *
+ * Note: Firebase auth is only available on client-side.
  */
 
 import {
@@ -20,6 +22,7 @@ import {
   createUserWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  Auth,
 } from 'firebase/auth';
 import { auth } from './firebase';
 
@@ -113,6 +116,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Listen to auth state changes.
    */
   useEffect(() => {
+    // Auth is only available on client-side
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
@@ -143,6 +152,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Sign in with email and password.
    */
   const signIn = async (email: string, password: string) => {
+    if (!auth) throw new Error('Auth not initialized');
     await signInWithEmailAndPassword(auth, email, password);
   };
 
@@ -150,6 +160,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Create new account.
    */
   const signUp = async (email: string, password: string) => {
+    if (!auth) throw new Error('Auth not initialized');
     await createUserWithEmailAndPassword(auth, email, password);
   };
 
@@ -157,6 +168,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Sign out.
    */
   const signOut = async () => {
+    if (!auth) return;
     await firebaseSignOut(auth);
     setQuota(null);
   };
@@ -165,6 +177,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Send password reset email.
    */
   const resetPassword = async (email: string) => {
+    if (!auth) throw new Error('Auth not initialized');
     await sendPasswordResetEmail(auth, email);
   };
 
