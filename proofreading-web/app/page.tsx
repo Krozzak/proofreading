@@ -140,7 +140,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        <p>ProofsLab v1.0 • PDF Comparison Laboratory</p>
+        <p>ProofsLab v1.1.0 • PDF Comparison Laboratory</p>
       </footer>
     </main>
   );
