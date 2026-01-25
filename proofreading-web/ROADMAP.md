@@ -36,7 +36,9 @@
 **URLs de production:**
 
 - Frontend: <https://proofslab.com>
-- Backend API: <https://proofslab-api-435240261375.europe-west1.run.app>
+- Backend API: <https://proofslab-api-851358345702.europe-west1.run.app>
+
+**Projet GCP:** `proofslab-3f8fe` (Firebase + Cloud Run)
 
 ---
 

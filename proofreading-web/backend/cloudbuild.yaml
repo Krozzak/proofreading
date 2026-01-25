@@ -1,8 +1,8 @@
 # Cloud Build configuration for deploying to Cloud Run
-# Project: proofslab
+# Project: proofslab-3f8fe (Firebase + Cloud Run consolidated)
 #
 # To deploy manually:
-#   gcloud builds submit --config cloudbuild.yaml --project=proofslab
+#   gcloud builds submit --config cloudbuild.yaml --project=proofslab-3f8fe
 #
 # Or set up automatic deployment from GitHub in Cloud Console
 
