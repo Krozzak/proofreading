@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { ComparisonView } from '@/components/ComparisonView';
 import { ResultsTable } from '@/components/ResultsTable';
+import { UserMenu } from '@/components/UserMenu';
 import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
 import {
   fileToBase64,
   convertPdfToImage,
@@ -20,6 +22,7 @@ import {
 
 export default function ComparePage() {
   const router = useRouter();
+  const { getIdToken, refreshQuota } = useAuth();
   const {
     pairs,
     currentIndex,
@@ -41,6 +44,7 @@ export default function ComparePage() {
   } = useAppStore();
 
   const [isCalculating, setIsCalculating] = useState(false);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
 
   // Redirect if no files
   useEffect(() => {
@@ -80,24 +84,37 @@ export default function ComparePage() {
     }
 
     setIsCalculating(true);
+    setQuotaError(null);
+
     try {
+      // Get auth token if logged in
+      const token = await getIdToken();
+
       // Convert both PDFs to images
       const origBase64 = await fileToBase64(currentPair.originalFile.file);
       const printBase64 = await fileToBase64(currentPair.printerFile.file);
 
       const [origResult, printResult] = await Promise.all([
-        convertPdfToImage(origBase64, currentPage),
-        convertPdfToImage(printBase64, currentPage),
+        convertPdfToImage(origBase64, currentPage, token),
+        convertPdfToImage(printBase64, currentPage, token),
       ]);
 
       if (origResult && printResult) {
-        const comparison = await compareImages(origResult.image, printResult.image);
+        const comparison = await compareImages(origResult.image, printResult.image, true, token);
         if (comparison) {
           updatePairSimilarity(currentIndex, comparison.similarity);
+          // Refresh quota display after successful comparison
+          await refreshQuota();
         }
       }
     } catch (error) {
       console.error('Error calculating similarity:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+
+      // Handle quota exceeded error
+      if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+        setQuotaError(errorMessage);
+      }
     } finally {
       setIsCalculating(false);
     }
@@ -242,7 +259,7 @@ export default function ComparePage() {
             className="drop-shadow-lg"
           />
           <h1 className="text-xl font-bold">ProofsLab</h1>
-          <span className="text-xs opacity-50">v1.1.0</span>
+          <span className="text-xs opacity-50">v1.2.0</span>
           <span className="text-sm opacity-70">
             {currentIndex + 1} / {pairs.length} fichiers
           </span>
@@ -263,11 +280,22 @@ export default function ComparePage() {
             <span className="text-sm font-bold w-10">{threshold}%</span>
           </div>
 
+          <UserMenu />
+
           <Button variant="secondary" size="sm" onClick={handleBack}>
             ← Retour
           </Button>
         </div>
       </header>
+
+      {/* Quota error banner */}
+      {quotaError && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-6 py-3 text-center">
+          <p className="text-destructive font-medium">
+            {quotaError}
+          </p>
+        </div>
+      )}
 
       {/* Main comparison area */}
       <div className="flex-1 p-6 overflow-hidden">

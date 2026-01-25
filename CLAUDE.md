@@ -4,31 +4,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Printer Proofreading** is a PDF comparison tool for validating printed materials against original designs. The repository contains three distinct implementations:
+**ProofsLab** is a PDF comparison tool for validating printed materials against original designs. The repository contains multiple implementations:
 
-1. **PROOFREADING_WEB** - Flask web application with portable executable support
-2. **STANDALONE_EXE** - Tkinter desktop application
-3. **Legacy versions** - Earlier iterations (proofreading.py, proofreading_v2.py)
+1. **proofreading-web** - Next.js frontend + FastAPI backend (current production version)
+2. **PROOFREADING/PROOFREADING_WEB** - Legacy Flask web application
+3. **PROOFREADING/STANDALONE_EXE** - Tkinter desktop application
+4. **Legacy versions** - Earlier iterations (proofreading.py, proofreading_v2.py)
 
 All implementations use SSIM (Structural Similarity Index) to compare PDF documents by converting them to images and calculating similarity scores.
 
 ## Project Structure
 
 ```
-PROOFREADING/
-├── proofreading.py              # Legacy version
-├── proofreading_v2.py           # Improved legacy version
-├── PrinterProofreading.spec     # PyInstaller spec for legacy
-├── STANDALONE_EXE/              # Tkinter desktop application
-│   ├── printer_proofreading.py  # Main application
-│   └── requirements.txt
-└── PROOFREADING_WEB/            # Flask web application
-    ├── app.py                   # Development Flask server
-    ├── launcher.py              # Portable executable launcher
-    ├── build_portable.py        # Build script
-    ├── requirements.txt
-    ├── templates/               # HTML templates
-    └── static/                  # CSS/JS/uploads
+Projet_ProofReading/
+├── proofreading-web/                # Current production (Next.js + FastAPI)
+│   ├── app/                         # Next.js pages
+│   │   ├── page.tsx                 # Home page with upload
+│   │   ├── compare/page.tsx         # Comparison interface
+│   │   └── dashboard/page.tsx       # User dashboard
+│   ├── components/                  # React components
+│   │   ├── AuthModal.tsx            # Login/signup modal
+│   │   ├── UserMenu.tsx             # User dropdown menu
+│   │   └── QuotaDisplay.tsx         # Quota usage display
+│   ├── lib/                         # Utilities
+│   │   ├── auth-context.tsx         # Firebase auth context
+│   │   ├── firebase.ts              # Firebase client config
+│   │   └── pdf-utils.ts             # PDF handling utilities
+│   └── backend/                     # FastAPI backend (Cloud Run)
+│       ├── main.py                  # API endpoints
+│       ├── cloudbuild.yaml          # GCP deployment config
+│       ├── Dockerfile               # Container config
+│       └── services/
+│           ├── firebase_admin.py    # Firebase Admin SDK
+│           ├── auth_dependency.py   # Auth middleware
+│           ├── quota_service.py     # Usage quota management
+│           ├── pdf_converter.py     # PDF to image conversion
+│           └── ssim_calculator.py   # SSIM comparison
+├── PROOFREADING/                    # Legacy implementations
+│   ├── PROOFREADING_WEB/            # Flask web application
+│   └── STANDALONE_EXE/              # Tkinter desktop application
 ```
 
 ## Core Architecture
@@ -63,7 +77,38 @@ All versions use an 8-character prefix matching system:
 
 ## Development Commands
 
-### PROOFREADING_WEB (Flask Web App)
+### proofreading-web (Next.js + FastAPI - Current Production)
+
+**Frontend (Next.js):**
+```bash
+cd proofreading-web
+npm install
+npm run dev
+```
+Frontend runs on http://localhost:3000
+
+**Backend (FastAPI) - Local:**
+```bash
+cd proofreading-web/backend
+pip install -r requirements.txt
+python main.py
+```
+Backend runs on http://localhost:8000
+
+**Backend Deployment (Cloud Run):**
+```bash
+cd proofreading-web/backend
+gcloud builds submit --config cloudbuild.yaml --project=proofslab-3f8fe
+```
+
+**Environment Variables:**
+- Frontend (.env.local):
+  - `NEXT_PUBLIC_API_URL` - Backend API URL
+  - `NEXT_PUBLIC_FIREBASE_*` - Firebase client config
+- Backend (Cloud Run secrets):
+  - `FIREBASE_SERVICE_ACCOUNT` - Firebase Admin SDK credentials (JSON string)
+
+### PROOFREADING_WEB (Legacy Flask Web App)
 
 **Install dependencies:**
 ```bash
@@ -227,6 +272,45 @@ The `PrinterProofreading.spec` configures PyInstaller:
    - Removed `imagehash` (was imported but never used)
    - Removed `cv2` / `opencv-python` (was imported but never used)
 
+## Authentication & Quota System (v1.2.0+)
+
+### Firebase Authentication
+The proofreading-web app uses Firebase Authentication:
+- **Client-side**: Firebase JS SDK in `lib/firebase.ts` and `lib/auth-context.tsx`
+- **Server-side**: Firebase Admin SDK in `backend/services/firebase_admin.py`
+- **Supported methods**: Email/password authentication
+- **Token flow**: Client gets ID token → sends in `Authorization: Bearer` header → backend verifies
+
+### Quota System
+Usage quotas are managed per user tier:
+- **Anonymous**: 1 comparison/day (IP-based tracking)
+- **Free account**: 5 comparisons/day
+- **Pro account**: 100 comparisons/day
+- **Enterprise**: Unlimited
+
+Quota data stored in Firestore (`users/{uid}` and `anonymous_quota/{ip_hash}`).
+
+### Backend API Endpoints
+- `GET /api/health` - Health check (public)
+- `GET /api/quota` - Get user's quota info (authenticated)
+- `POST /api/convert` - Convert PDF to image (public, no quota)
+- `POST /api/compare` - Compare two images (quota-limited)
+
+### Cloud Run Configuration
+The backend deploys to Cloud Run with:
+- Region: `europe-west1`
+- Memory: 1Gi
+- Secret: `firebase-service-account` from Secret Manager
+
+To set up the secret:
+```bash
+# Create secret from Firebase service account JSON
+gcloud secrets create firebase-service-account \
+  --data-file=path/to/serviceAccountKey.json \
+  --project=proofslab-3f8fe
+```
+
 ## Version Information
+- **proofreading-web**: v1.2.0 (frontend) / v2.1.0 (backend API)
 - **STANDALONE_EXE**: v1.0.0 (hardcoded in printer_proofreading.py)
-- **PROOFREADING_WEB**: No explicit version tracking
+- **PROOFREADING_WEB (legacy)**: No explicit version tracking

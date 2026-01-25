@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Printer Proofreading - PDF Comparison Tool",
-  description: "Compare printed materials against original designs using SSIM similarity analysis",
+  title: "ProofsLab - PDF Comparison Tool",
+  description: "Compare printed materials against original designs using AI-powered similarity analysis. The PDF comparison laboratory for print professionals.",
+  keywords: ["PDF comparison", "print proofing", "SSIM", "document comparison", "quality control"],
+  authors: [{ name: "ProofsLab" }],
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "ProofsLab - PDF Comparison Tool",
+    description: "Compare printed materials against original designs using AI-powered similarity analysis.",
+    url: "https://proofslab.com",
+    siteName: "ProofsLab",
+    type: "website",
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "ProofsLab Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "ProofsLab - PDF Comparison Tool",
+    description: "Compare printed materials against original designs using AI-powered similarity analysis.",
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({
@@ -27,7 +55,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

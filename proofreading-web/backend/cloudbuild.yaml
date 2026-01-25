@@ -1,9 +1,13 @@
 # Cloud Build configuration for deploying to Cloud Run
+# Project: proofslab
 #
 # To deploy manually:
-#   gcloud builds submit --config cloudbuild.yaml
+#   gcloud builds submit --config cloudbuild.yaml --project=proofslab
 #
 # Or set up automatic deployment from GitHub in Cloud Console
+
+substitutions:
+  _TAG: 'latest'  # Default tag for manual builds
 
 steps:
   # Build the Docker image
@@ -11,21 +15,14 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/proofreading-api:$COMMIT_SHA'
-      - '-t'
-      - 'gcr.io/$PROJECT_ID/proofreading-api:latest'
+      - 'gcr.io/$PROJECT_ID/proofslab-api:${_TAG}'
       - '.'
 
   # Push to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/proofreading-api:$COMMIT_SHA'
-
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'gcr.io/$PROJECT_ID/proofreading-api:latest'
+      - 'gcr.io/$PROJECT_ID/proofslab-api:${_TAG}'
 
   # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -33,11 +30,11 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'proofreading-api'
+      - 'proofslab-api'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/proofreading-api:$COMMIT_SHA'
+      - 'gcr.io/$PROJECT_ID/proofslab-api:${_TAG}'
       - '--region'
-      - 'europe-west1'  # Change to your preferred region
+      - 'europe-west1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
@@ -50,14 +47,15 @@ steps:
       - '--concurrency'
       - '10'
       - '--min-instances'
-      - '0'  # Scale to zero when not in use
+      - '0'
       - '--max-instances'
       - '10'
+      - '--set-secrets'
+      - 'FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest'
 
 # Store images in Container Registry
 images:
-  - 'gcr.io/$PROJECT_ID/proofreading-api:$COMMIT_SHA'
-  - 'gcr.io/$PROJECT_ID/proofreading-api:latest'
+  - 'gcr.io/$PROJECT_ID/proofslab-api:${_TAG}'
 
 # Build timeout
 timeout: '1200s'
