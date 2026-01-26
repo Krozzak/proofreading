@@ -42,17 +42,25 @@
 
 ---
 
-### Améliorations UI (à faire plus tard)
+### Améliorations UI (TERMINÉ)
 
-Ces améliorations ont été identifiées lors des tests et seront implémentées dans une phase ultérieure :
+| Amélioration | Status | Date |
+|--------------|--------|------|
+| Calcul automatique au chargement | Fait | 26/01/2026 |
+| Barre de progression animée | Fait | 26/01/2026 |
+| Bouton "Calculer toutes les similarités" | Fait | 26/01/2026 |
+| Auto-approbation par seuil | Fait | 26/01/2026 |
+| Barre de recherche dans le tableau | Fait | 26/01/2026 |
+| PricingModal (évite perte de session) | Fait | 26/01/2026 |
 
-| Amélioration | Description |
-|--------------|-------------|
-| Calcul automatique au chargement | Lancer le calcul de similarité automatiquement à l'arrivée sur la page de comparaison |
-| Barre de progression animée | La barre de similarité se remplit au fur et à mesure du calcul |
-| Bouton "Calculer toutes les similarités" | Calculer tous les scores en séquence, afficher le chargement dans le tableau |
-| Auto-approbation par seuil | Bouton pour approuver automatiquement tous les fichiers au-dessus du seuil |
-| Barre de recherche dans le tableau | Filtrer le tableau par code ou nom de fichier (à droite du compteur "X fichiers") |
+**Détails d'implémentation**:
+
+- **Auto-calcul**: Toggle dans le header, persisté en localStorage, vérifie le quota avant chaque calcul
+- **Barre animée**: Progression 0→50% sur 10s pendant le calcul, puis transition vers le score final
+- **Tout calculer**: Bouton dans ResultsTable, calcul séquentiel avec vérification quota, arrêt si 429
+- **Auto-approuver**: Bouton vert "Auto-approuver (>=X%)" qui approuve tous les fichiers au-dessus du seuil
+- **Recherche**: Input filtrant par code ou nom de fichier
+- **PricingModal**: Modale affichant les plans sans quitter /compare (évite la perte des File objects)
 
 ---
 
@@ -114,6 +122,7 @@ Le backend accepte les origines suivantes :
 | Gestion des abonnements | Fait | 25/01/2026 |
 | Customer Portal (gérer abonnement) | Fait | 25/01/2026 |
 | Secrets GCP pour Stripe | Fait | 25/01/2026 |
+| Passer Stripe en production | À faire |
 
 **Plans tarifaires**:
 
@@ -303,4 +312,4 @@ proofreading-web/
 
 ---
 
-*Dernière mise à jour: 25 janvier 2026 - Phase 3 Stripe terminée*
+*Dernière mise à jour: 26 janvier 2026 - Améliorations UI terminées*
