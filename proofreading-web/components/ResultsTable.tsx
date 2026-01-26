@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import {
   Table,
   TableBody,
@@ -20,6 +21,13 @@ interface ResultsTableProps {
   onCopyClipboard: () => void;
   showMatchedOnly: boolean;
   onToggleFilter: () => void;
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onCalculateAll?: () => void;
+  isBatchCalculating?: boolean;
+  batchProgress?: { current: number; total: number };
+  onAutoApprove?: () => void;
+  threshold?: number;
 }
 
 export function ResultsTable({
@@ -30,10 +38,31 @@ export function ResultsTable({
   onCopyClipboard,
   showMatchedOnly,
   onToggleFilter,
+  searchQuery,
+  onSearchChange,
+  onCalculateAll,
+  isBatchCalculating,
+  batchProgress,
+  onAutoApprove,
+  threshold,
 }: ResultsTableProps) {
-  const filteredPairs = showMatchedOnly
-    ? pairs.filter((p) => p.originalFile && p.printerFile)
-    : pairs;
+  const filteredPairs = useMemo(() => {
+    let result = showMatchedOnly
+      ? pairs.filter((p) => p.originalFile && p.printerFile)
+      : pairs;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (p) =>
+          p.code.toLowerCase().includes(query) ||
+          p.originalFile?.name.toLowerCase().includes(query) ||
+          p.printerFile?.name.toLowerCase().includes(query)
+      );
+    }
+
+    return result;
+  }, [pairs, showMatchedOnly, searchQuery]);
 
   const getMatchingStatus = (pair: ComparisonPair) => {
     if (pair.originalFile && pair.printerFile) return 'Les deux';
@@ -80,19 +109,68 @@ export function ResultsTable({
             size="sm"
             onClick={onToggleFilter}
           >
-            🔍 {showMatchedOnly ? 'Tous les fichiers' : 'Fichiers correspondants'}
+            {showMatchedOnly ? 'Tous les fichiers' : 'Correspondants'}
           </Button>
           <span className="text-sm text-muted-foreground">
             {filteredPairs.length} fichier{filteredPairs.length > 1 ? 's' : ''}
           </span>
+
+          {/* Search input */}
+          <div className="relative ml-2">
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-7 pr-7 py-1.5 text-sm border rounded-md w-40 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+              🔎
+            </span>
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
+          {onCalculateAll && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onCalculateAll}
+              disabled={isBatchCalculating}
+            >
+              {isBatchCalculating ? (
+                <>
+                  <span className="animate-spin mr-1">⏳</span>
+                  {batchProgress?.current}/{batchProgress?.total}
+                </>
+              ) : (
+                'Tout calculer'
+              )}
+            </Button>
+          )}
+          {onAutoApprove && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onAutoApprove}
+              className="text-green-600 border-green-600 hover:bg-green-50"
+            >
+              Auto-approuver ({'>='}{threshold}%)
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={onExportCSV}>
-            📋 Exporter CSV
+            CSV
           </Button>
           <Button variant="outline" size="sm" onClick={onCopyClipboard}>
-            📋 Copier
+            Copier
           </Button>
         </div>
       </div>

@@ -86,11 +86,12 @@ export function ComparisonView({
 
         {/* Similarity bar or calculate button */}
         <div className="flex-1 flex items-center gap-4">
-          {pair.similarity !== null ? (
+          {pair.similarity !== null || isCalculating ? (
             <SimilarityBar
               score={pair.similarity}
               threshold={threshold}
               size="md"
+              isCalculating={isCalculating}
             />
           ) : canCalculateSimilarity ? (
             <Button
@@ -153,7 +154,16 @@ export function ComparisonView({
         </Card>
 
         {/* Printer */}
-        <Card className="flex flex-col overflow-hidden">
+        <Card
+          className={cn(
+            'flex flex-col overflow-hidden transition-all duration-500',
+            pair.similarity !== null && !isCalculating
+              ? pair.similarity >= threshold
+                ? 'ring-4 ring-green-500'
+                : 'ring-4 ring-red-500'
+              : ''
+          )}
+        >
           <div className="bg-secondary text-white py-2 px-4 text-center font-semibold">
             IMPRIMEUR
           </div>

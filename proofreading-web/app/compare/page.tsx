@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { ComparisonView } from '@/components/ComparisonView';
 import { ResultsTable } from '@/components/ResultsTable';
 import { UserMenu } from '@/components/UserMenu';
+import { PricingModal } from '@/components/PricingModal';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -22,19 +23,24 @@ import {
 
 export default function ComparePage() {
   const router = useRouter();
-  const { getIdToken, refreshQuota } = useAuth();
+  const { getIdToken, refreshQuota, quota } = useAuth();
   const {
     pairs,
     currentIndex,
     currentPage,
     threshold,
     showMatchedOnly,
+    searchQuery,
+    autoCalculate,
     setCurrentIndex,
     setCurrentPage,
     setThreshold,
     setShowMatchedOnly,
+    setSearchQuery,
+    setAutoCalculate,
     validateCurrentPage,
     updatePairSimilarity,
+    autoApprovePair,
     goToNextPair,
     goToPrevPair,
     goToNextPage,
@@ -45,15 +51,33 @@ export default function ComparePage() {
 
   const [isCalculating, setIsCalculating] = useState(false);
   const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [isBatchCalculating, setIsBatchCalculating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
-  // Redirect if no files
+  // Only redirect if no files AND it's not a back navigation
+  // We check sessionStorage to know if we had files before
   useEffect(() => {
     if (pairs.length === 0) {
-      router.push('/');
+      // Check if we should redirect or show empty state
+      const hadSession = sessionStorage.getItem('prooflab-session-active');
+      if (!hadSession) {
+        router.push('/');
+      }
     } else {
       setIsAnalyzing(false);
+      // Mark that we have an active session
+      sessionStorage.setItem('prooflab-session-active', 'true');
     }
   }, [pairs, router, setIsAnalyzing]);
+
+  // Hydrate autoCalculate from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('prooflab-auto-calculate');
+    if (stored === 'true') {
+      setAutoCalculate(true);
+    }
+  }, [setAutoCalculate]);
 
   // Get current pair
   const currentPair = pairs[currentIndex];
@@ -117,6 +141,117 @@ export default function ComparePage() {
       }
     } finally {
       setIsCalculating(false);
+    }
+  };
+
+  // Auto-calculate similarity when enabled and conditions are met
+  useEffect(() => {
+    if (
+      autoCalculate &&
+      currentPair?.originalFile?.file &&
+      currentPair?.printerFile?.file &&
+      currentPair.similarity === null &&
+      !isCalculating &&
+      !isBatchCalculating &&
+      quota &&
+      quota.remaining > 0
+    ) {
+      handleCalculateSimilarity();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCalculate, currentIndex, currentPair?.similarity]);
+
+  // Calculate all similarities in batch
+  const handleCalculateAll = async () => {
+    const pairsToCalculate = pairs
+      .map((pair, index) => ({ pair, index }))
+      .filter(
+        ({ pair }) =>
+          pair.originalFile?.file &&
+          pair.printerFile?.file &&
+          pair.similarity === null
+      );
+
+    if (pairsToCalculate.length === 0) {
+      alert('Toutes les similarités sont déjà calculées !');
+      return;
+    }
+
+    // Check initial quota
+    await refreshQuota();
+    if (!quota || quota.remaining < 1) {
+      setQuotaError('Quota insuffisant pour calculer les similarités');
+      return;
+    }
+
+    setIsBatchCalculating(true);
+    setBatchProgress({ current: 0, total: pairsToCalculate.length });
+    setQuotaError(null);
+
+    const token = await getIdToken();
+
+    for (let i = 0; i < pairsToCalculate.length; i++) {
+      const { pair, index } = pairsToCalculate[i];
+
+      try {
+        const origBase64 = await fileToBase64(pair.originalFile!.file!);
+        const printBase64 = await fileToBase64(pair.printerFile!.file!);
+
+        const [origResult, printResult] = await Promise.all([
+          convertPdfToImage(origBase64, 0, token),
+          convertPdfToImage(printBase64, 0, token),
+        ]);
+
+        if (origResult && printResult) {
+          const comparison = await compareImages(
+            origResult.image,
+            printResult.image,
+            true,
+            token
+          );
+          if (comparison) {
+            updatePairSimilarity(index, comparison.similarity);
+          }
+        }
+
+        setBatchProgress({ current: i + 1, total: pairsToCalculate.length });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur';
+        if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('quota')) {
+          setQuotaError(`Quota épuisé après ${i} calcul(s)`);
+          break;
+        }
+        console.error(`Error calculating pair ${index}:`, error);
+      }
+    }
+
+    setIsBatchCalculating(false);
+    await refreshQuota();
+  };
+
+  // Auto-approve all files above threshold
+  const handleAutoApprove = () => {
+    const eligiblePairs = pairs.filter(
+      (pair, index) =>
+        pair.similarity !== null &&
+        pair.similarity >= threshold &&
+        pair.validation !== 'approved'
+    );
+
+    if (eligiblePairs.length === 0) {
+      alert('Aucun fichier éligible à l\'auto-approbation');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Approuver automatiquement ${eligiblePairs.length} fichier(s) avec similarité >= ${threshold}% ?`
+    );
+
+    if (confirmed) {
+      eligiblePairs.forEach((pair) => {
+        const index = pairs.indexOf(pair);
+        autoApprovePair(index);
+      });
     }
   };
 
@@ -229,17 +364,34 @@ export default function ComparePage() {
   };
 
   const handleBack = () => {
+    // Clear session marker when explicitly going back
+    sessionStorage.removeItem('prooflab-session-active');
     reset();
     router.push('/');
   };
 
   if (pairs.length === 0) {
+    // Check if session was lost (e.g., page refresh)
+    const hadSession = typeof window !== 'undefined' && sessionStorage.getItem('prooflab-session-active');
+
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Aucun fichier à comparer</p>
+        <div className="text-center max-w-md">
+          {hadSession ? (
+            <>
+              <p className="text-lg font-medium mb-2">Session expirée</p>
+              <p className="text-muted-foreground mb-4">
+                Les données de comparaison ont été perdues suite à un rechargement de page.
+                Veuillez recommencer l&apos;analyse.
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground mb-4">Aucun fichier à comparer</p>
+          )}
           <Link href="/">
-            <Button>Retour à l&apos;accueil</Button>
+            <Button onClick={() => sessionStorage.removeItem('prooflab-session-active')}>
+              Retour à l&apos;accueil
+            </Button>
           </Link>
         </div>
       </div>
@@ -248,57 +400,86 @@ export default function ComparePage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="bg-primary text-white py-3 px-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Image
-            src="/logo.png"
-            alt="ProofsLab Logo"
-            width={40}
-            height={40}
-            className="drop-shadow-lg"
-          />
-          <h1 className="text-xl font-bold">ProofsLab</h1>
-          <span className="text-xs opacity-50">v1.2.0</span>
-          <span className="text-sm opacity-70">
-            {currentIndex + 1} / {pairs.length} fichiers
-          </span>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Threshold control */}
-          <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1">
-            <span className="text-sm">Seuil:</span>
-            <Slider
-              value={[threshold]}
-              onValueChange={(value) => setThreshold(value[0])}
-              min={50}
-              max={100}
-              step={1}
-              className="w-24"
+      {/* Fixed header + error banner */}
+      <div className="sticky top-0 z-50">
+        {/* Header */}
+        <header className="bg-primary text-white py-3 px-6 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Image
+              src="/logo.png"
+              alt="ProofsLab Logo"
+              width={40}
+              height={40}
+              className="drop-shadow-lg"
             />
-            <span className="text-sm font-bold w-10">{threshold}%</span>
+            <h1 className="text-xl font-bold">ProofsLab</h1>
+            <span className="text-xs opacity-50">v1.2.0</span>
+            <span className="text-sm opacity-70">
+              {currentIndex + 1} / {pairs.length} fichiers
+            </span>
           </div>
 
-          <UserMenu />
+          <div className="flex items-center gap-4">
+            {/* Auto-calculate toggle */}
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1">
+              <label htmlFor="auto-calc" className="text-sm cursor-pointer">
+                Auto-calcul:
+              </label>
+              <input
+                type="checkbox"
+                id="auto-calc"
+                checked={autoCalculate}
+                onChange={(e) => setAutoCalculate(e.target.checked)}
+                className="w-4 h-4 cursor-pointer accent-white"
+              />
+              {autoCalculate && quota && quota.remaining <= 3 && (
+                <span className="text-yellow-300 text-xs ml-1">
+                  ({quota.remaining} restants)
+                </span>
+              )}
+            </div>
 
-          <Button variant="secondary" size="sm" onClick={handleBack}>
-            ← Retour
-          </Button>
-        </div>
-      </header>
+            {/* Threshold control */}
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1">
+              <span className="text-sm">Seuil:</span>
+              <Slider
+                value={[threshold]}
+                onValueChange={(value) => setThreshold(value[0])}
+                min={50}
+                max={100}
+                step={1}
+                className="w-24"
+              />
+              <span className="text-sm font-bold w-10">{threshold}%</span>
+            </div>
 
-      {/* Quota error banner */}
-      {quotaError && (
-        <div className="bg-destructive/10 border-b border-destructive/20 px-6 py-3 text-center">
-          <p className="text-destructive font-medium">
-            {quotaError}
-          </p>
-        </div>
-      )}
+            <UserMenu />
+
+            <Button variant="secondary" size="sm" onClick={handleBack}>
+              ← Retour
+            </Button>
+          </div>
+        </header>
+
+        {/* Quota error banner */}
+        {quotaError && (
+          <div className="bg-red-100 border-b border-red-300 px-6 py-3 text-center">
+            <p className="text-red-700 font-medium">
+              {quotaError}
+              {' — '}
+              <button
+                onClick={() => setShowPricingModal(true)}
+                className="underline hover:no-underline font-bold"
+              >
+                Passer au plan Pro
+              </button>
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Main comparison area */}
-      <div className="flex-1 p-6 overflow-hidden">
+      <div className="flex-1 p-6 overflow-auto">
         {currentPair ? (
           <ComparisonView
             pair={currentPair}
@@ -330,6 +511,13 @@ export default function ComparePage() {
           onCopyClipboard={handleCopyClipboard}
           showMatchedOnly={showMatchedOnly}
           onToggleFilter={() => setShowMatchedOnly(!showMatchedOnly)}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onCalculateAll={handleCalculateAll}
+          isBatchCalculating={isBatchCalculating}
+          batchProgress={batchProgress}
+          onAutoApprove={handleAutoApprove}
+          threshold={threshold}
         />
       </div>
 
@@ -337,6 +525,12 @@ export default function ComparePage() {
       <div className="bg-muted py-2 px-6 text-center text-xs text-muted-foreground">
         Raccourcis: ←/→ Pages • Shift+←/→ PDFs • A Approuver • R Rejeter
       </div>
+
+      {/* Pricing modal */}
+      <PricingModal
+        isOpen={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+      />
     </main>
   );
 }

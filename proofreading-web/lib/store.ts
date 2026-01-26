@@ -15,6 +15,8 @@ interface AppState {
   threshold: number;
   isAnalyzing: boolean;
   showMatchedOnly: boolean;
+  searchQuery: string;
+  autoCalculate: boolean;
 
   setPairs: (pairs: ComparisonPair[]) => void;
   setCurrentIndex: (index: number) => void;
@@ -22,10 +24,13 @@ interface AppState {
   setThreshold: (threshold: number) => void;
   setIsAnalyzing: (isAnalyzing: boolean) => void;
   setShowMatchedOnly: (show: boolean) => void;
+  setSearchQuery: (query: string) => void;
+  setAutoCalculate: (enabled: boolean) => void;
 
   // Validation
   validateCurrentPage: (status: 'approved' | 'rejected', comment?: string) => void;
   updatePairSimilarity: (index: number, similarity: number) => void;
+  autoApprovePair: (index: number) => void;
 
   // Navigation helpers
   goToNextPair: () => void;
@@ -51,6 +56,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   threshold: 85,
   isAnalyzing: false,
   showMatchedOnly: false,
+  searchQuery: '',
+  autoCalculate: false,
 
   // Setters
   setOriginalFiles: (files) => set({ originalFiles: files }),
@@ -61,6 +68,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   setThreshold: (threshold) => set({ threshold }),
   setIsAnalyzing: (isAnalyzing) => set({ isAnalyzing }),
   setShowMatchedOnly: (show) => set({ showMatchedOnly: show }),
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setAutoCalculate: (enabled) => {
+    set({ autoCalculate: enabled });
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('prooflab-auto-calculate', String(enabled));
+    }
+  },
 
   // Validation
   validateCurrentPage: (status, comment = '') => {
@@ -119,6 +133,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  autoApprovePair: (index) => {
+    const { pairs } = get();
+    const pair = pairs[index];
+    if (!pair) return;
+
+    const maxPages = Math.max(pair.totalPagesOriginal, pair.totalPagesPrinter);
+    const newPageValidations: Record<number, PageValidation> = {};
+
+    // Mark all pages as approved
+    for (let i = 0; i < maxPages; i++) {
+      newPageValidations[i] = { status: 'approved', comment: '' };
+    }
+
+    const updatedPairs = [...pairs];
+    updatedPairs[index] = {
+      ...pair,
+      pageValidations: newPageValidations,
+      validation: 'approved',
+      validatedAt: new Date().toISOString(),
+    };
+
+    set({ pairs: updatedPairs });
+  },
+
   // Navigation
   goToNextPair: () => {
     const { currentIndex, pairs } = get();
@@ -160,6 +198,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentIndex: 0,
       currentPage: 0,
       isAnalyzing: false,
+      searchQuery: '',
     }),
 }));
 
