@@ -10,7 +10,7 @@
 
 - **Anonymous** (non connecté): 1 comparaison/jour
 - **Free** (compte gratuit): 5 comparaisons/jour
-- **Pro** (~$9.99/mois): 100 comparaisons/jour + fonctionnalités IA
+- **Pro** ($4.99/mois ou $47.90/an): 100 comparaisons/jour + fonctionnalités IA
 - **Enterprise** (sur devis): Illimité + API + support dédié
 
 ---
@@ -101,18 +101,19 @@ Le backend accepte les origines suivantes :
 
 ---
 
-### Phase 3: Monétisation (Stripe)
+### Phase 3: Monétisation (Stripe) (TERMINÉ)
 
 **Objectif**: Permettre les abonnements payants.
 
-| Tâche | Status |
-|-------|--------|
-| Configurer Stripe | À faire |
-| Créer page pricing | À faire |
-| Checkout session | À faire |
-| Webhooks Stripe | À faire |
-| Gestion des abonnements | À faire |
-| Emails de confirmation | À faire |
+| Tâche | Status | Date |
+|-------|--------|------|
+| Configurer Stripe | Fait | 25/01/2026 |
+| Créer page pricing | Fait | 25/01/2026 |
+| Checkout session | Fait | 25/01/2026 |
+| Webhooks Stripe | Fait | 25/01/2026 |
+| Gestion des abonnements | Fait | 25/01/2026 |
+| Customer Portal (gérer abonnement) | Fait | 25/01/2026 |
+| Secrets GCP pour Stripe | Fait | 25/01/2026 |
 
 **Plans tarifaires**:
 
@@ -120,8 +121,20 @@ Le backend accepte les origines suivantes :
 |------|------|--------|-----------------|
 | Anonyme | $0 | 1/jour | SSIM basique |
 | Free | $0 | 5/jour | SSIM basique |
-| Pro | $9.99/mois | 100/jour | + IA, + historique |
-| Enterprise | Sur devis | Illimité | + API, + support |
+| Pro | $4.99/mois ou $47.90/an (-20%) | 100/jour | + IA (bientôt), + support prioritaire |
+| Enterprise | Sur devis | Illimité | + API, + support dédié |
+
+**Implémentation technique**:
+
+- **Frontend**: Page `/pricing` avec choix mensuel/annuel, redirection vers Stripe Checkout
+- **Backend**: `stripe_service.py` avec création checkout, webhooks, customer portal
+- **Webhooks**: `checkout.session.completed`, `customer.subscription.updated/deleted`, `invoice.payment_failed`
+- **Secrets GCP**: `stripe-secret-key`, `stripe-webhook-secret`, `stripe-price-monthly`, `stripe-price-yearly`
+
+**URLs Stripe**:
+
+- Dashboard: <https://dashboard.stripe.com>
+- Webhook endpoint: `https://proofslab-api-851358345702.europe-west1.run.app/api/stripe/webhook`
 
 ---
 
@@ -173,6 +186,26 @@ Le backend accepte les origines suivantes :
 
 ---
 
+### Phase 7: Amélioration du Matching
+
+**Objectif**: Rendre le système de matching plus flexible et user-friendly.
+
+| Tâche | Status |
+|-------|--------|
+| Documentation du matching (UI tooltip/modal) | À faire |
+| Améliorer la robustesse du matching | À faire |
+| Wizard de matching manuel pour fichiers non matchés | À faire |
+| IA matching automatique (noms différents) | À faire (futur) |
+
+**Détails**:
+
+- **Documentation UI**: Expliquer clairement aux utilisateurs le système de matching actuel (8 premiers caractères) via un tooltip ou une section d'aide sur la page d'upload
+- **Matching robuste**: Ignorer les espaces, tirets, underscores ; matching insensible à la casse ; support de préfixes/suffixes communs
+- **Wizard manuel**: Interface permettant à l'utilisateur d'associer manuellement les fichiers Original/Imprimeur qui n'ont pas pu être matchés automatiquement
+- **IA matching (futur)**: Utiliser un modèle IA pour suggérer des correspondances basées sur le contenu des documents (même si les noms sont différents)
+
+---
+
 ## Architecture technique
 
 ```
@@ -221,6 +254,8 @@ proofreading-web/
 ├── app/                    # Pages Next.js
 │   ├── page.tsx           # Home (upload)
 │   ├── compare/           # Comparison view
+│   ├── dashboard/         # User dashboard
+│   ├── pricing/           # Pricing & checkout
 │   ├── layout.tsx         # Root layout (+ AuthProvider)
 │   └── globals.css        # Global styles
 ├── backend/               # API Python (Cloud Run)
@@ -233,7 +268,8 @@ proofreading-web/
 │       ├── ssim_calculator.py
 │       ├── firebase_admin.py   # Firebase Admin SDK init
 │       ├── quota_service.py    # Gestion quotas Firestore
-│       └── auth_dependency.py  # FastAPI auth dependency
+│       ├── auth_dependency.py  # FastAPI auth dependency
+│       └── stripe_service.py   # Stripe checkout, webhooks, portal
 ├── components/            # React components
 │   ├── ComparisonView.tsx
 │   ├── DropZone.tsx
@@ -247,7 +283,8 @@ proofreading-web/
 │   ├── store.ts          # Zustand state
 │   ├── types.ts          # TypeScript types
 │   ├── firebase.ts       # Firebase client config
-│   └── auth-context.tsx  # React auth context
+│   ├── auth-context.tsx  # React auth context
+│   └── stripe.ts         # Stripe client utilities
 ├── .env.example          # Environment template
 ├── .env.local            # Variables locales (non committé)
 ├── vercel.json           # Vercel config
@@ -266,4 +303,4 @@ proofreading-web/
 
 ---
 
-*Dernière mise à jour: 25 janvier 2026*
+*Dernière mise à jour: 25 janvier 2026 - Phase 3 Stripe terminée*
