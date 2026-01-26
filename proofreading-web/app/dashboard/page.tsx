@@ -14,7 +14,6 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/lib/auth-context';
 import {
-  redirectToCheckout,
   redirectToCustomerPortal,
   getSubscription,
   formatPeriodEnd,
@@ -28,7 +27,6 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const { user, loading, quota, refreshQuota, signOut, getIdToken } = useAuth();
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
 
   // Check for successful upgrade
@@ -63,17 +61,8 @@ function DashboardContent() {
     }
   }, [user, refreshQuota, getIdToken]);
 
-  const handleUpgrade = async () => {
-    setUpgradeLoading(true);
-    try {
-      const token = await getIdToken();
-      if (token) {
-        await redirectToCheckout(token, 'yearly');
-      }
-    } catch (e) {
-      console.error('Upgrade failed:', e);
-    }
-    setUpgradeLoading(false);
+  const handleUpgrade = () => {
+    router.push('/pricing');
   };
 
   const handleManageSubscription = async () => {
@@ -303,14 +292,10 @@ function DashboardContent() {
                   <Button
                     className="mt-4"
                     size="lg"
-                    disabled={upgradeLoading}
                     onClick={handleUpgrade}
                   >
-                    {upgradeLoading ? 'Redirection...' : 'Passer au Pro'}
+                    Voir les plans
                   </Button>
-                  <Link href="/pricing" className="block mt-2 text-sm text-primary hover:underline">
-                    Voir tous les plans
-                  </Link>
                 </div>
               </div>
             </Card>
