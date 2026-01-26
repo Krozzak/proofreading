@@ -68,3 +68,42 @@ export interface ExportRow {
   comment: string;
   date: string;
 }
+
+// History types for persistent approval storage
+
+export interface HistoryFileInfo {
+  name: string;
+  size: number;
+}
+
+export interface HistoryPageValidation {
+  status: 'approved' | 'rejected' | null;
+  comment?: string;
+}
+
+export interface HistoryMatch {
+  fileSignature: string;
+  similarity: number | null;
+  validation: ValidationStatus;
+  pageValidations: Record<string, HistoryPageValidation>;
+  comment: string;
+  validatedAt: string | null;
+}
+
+export interface SavedComparison {
+  fileSignature: string;
+  code: string;
+  originalFile: HistoryFileInfo | null;
+  printerFile: HistoryFileInfo | null;
+  similarity: number | null;
+  validation: ValidationStatus;
+  pageValidations: Record<string, HistoryPageValidation>;
+  comment: string;
+  validatedAt: string | null;
+}
+
+export interface HistoryEntry extends SavedComparison {
+  id: string;
+  createdAt: string | null;
+  updatedAt: string | null;
+}

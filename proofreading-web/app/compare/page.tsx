@@ -10,8 +10,10 @@ import { ComparisonView } from '@/components/ComparisonView';
 import { ResultsTable } from '@/components/ResultsTable';
 import { UserMenu } from '@/components/UserMenu';
 import { PricingModal } from '@/components/PricingModal';
+import { HistoryBanner } from '@/components/HistoryBanner';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
+import { useHistorySync } from '@/lib/useHistorySync';
 import {
   fileToBase64,
   convertPdfToImage,
@@ -23,7 +25,7 @@ import {
 
 export default function ComparePage() {
   const router = useRouter();
-  const { getIdToken, refreshQuota, quota } = useAuth();
+  const { getIdToken, refreshQuota, quota, user } = useAuth();
   const {
     pairs,
     currentIndex,
@@ -32,6 +34,7 @@ export default function ComparePage() {
     showMatchedOnly,
     searchQuery,
     autoCalculate,
+    restoredIndices,
     setCurrentIndex,
     setCurrentPage,
     setThreshold,
@@ -48,6 +51,18 @@ export default function ComparePage() {
     reset,
     setIsAnalyzing,
   } = useAppStore();
+
+  // History sync hook (handles matching and saving in background)
+  const {
+    isLoadingHistory,
+    matchedCount,
+    showRestorePrompt,
+    lastSaveTime,
+    isSaving,
+    restoreFromHistory,
+    dismissRestorePrompt,
+    forceNewVersion,
+  } = useHistorySync();
 
   const [isCalculating, setIsCalculating] = useState(false);
   const [quotaError, setQuotaError] = useState<string | null>(null);
@@ -476,6 +491,16 @@ export default function ComparePage() {
             </p>
           </div>
         )}
+
+        {/* History restore banner */}
+        {user && showRestorePrompt && (
+          <HistoryBanner
+            matchedCount={matchedCount}
+            onRestore={restoreFromHistory}
+            onNewVersion={forceNewVersion}
+            onDismiss={dismissRestorePrompt}
+          />
+        )}
       </div>
 
       {/* Main comparison area */}
@@ -518,6 +543,7 @@ export default function ComparePage() {
           batchProgress={batchProgress}
           onAutoApprove={handleAutoApprove}
           threshold={threshold}
+          restoredIndices={restoredIndices}
         />
       </div>
 

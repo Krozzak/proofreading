@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ComparisonPair, PageValidation } from './types';
+import type { ComparisonPair, PageValidation, HistoryMatch } from './types';
 
 interface AppState {
   // Upload state
@@ -38,6 +38,18 @@ interface AppState {
   goToNextPage: () => void;
   goToPrevPage: () => void;
 
+  // History state
+  fileSignatures: Map<number, string>; // Map pair index to file signature
+  pendingSaveIndices: Set<number>; // Indices of pairs that need saving
+  restoredIndices: Set<number>; // Indices of pairs restored from history
+
+  // History actions
+  setFileSignatures: (signatures: Map<number, string>) => void;
+  markPairForSave: (index: number) => void;
+  markPairsAsRestored: (indices: number[]) => void;
+  clearPendingSaves: () => void;
+  applyHistoryMatch: (index: number, match: HistoryMatch) => void;
+
   // Reset
   reset: () => void;
 }
@@ -58,6 +70,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   showMatchedOnly: false,
   searchQuery: '',
   autoCalculate: false,
+
+  // History state
+  fileSignatures: new Map(),
+  pendingSaveIndices: new Set(),
+  restoredIndices: new Set(),
 
   // Setters
   setOriginalFiles: (files) => set({ originalFiles: files }),
@@ -114,6 +131,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     set({ pairs: updatedPairs });
 
+    // Mark pair for history save
+    const { pendingSaveIndices } = get();
+    const newPendingSaves = new Set(pendingSaveIndices);
+    newPendingSaves.add(currentIndex);
+    set({ pendingSaveIndices: newPendingSaves });
+
     // Auto-navigate
     if (currentPage < maxPages - 1) {
       // Go to next page
@@ -125,16 +148,21 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   updatePairSimilarity: (index, similarity) => {
-    const { pairs } = get();
+    const { pairs, pendingSaveIndices } = get();
     const updatedPairs = [...pairs];
     if (updatedPairs[index]) {
       updatedPairs[index] = { ...updatedPairs[index], similarity };
-      set({ pairs: updatedPairs });
+
+      // Mark pair for history save
+      const newPendingSaves = new Set(pendingSaveIndices);
+      newPendingSaves.add(index);
+
+      set({ pairs: updatedPairs, pendingSaveIndices: newPendingSaves });
     }
   },
 
   autoApprovePair: (index) => {
-    const { pairs } = get();
+    const { pairs, pendingSaveIndices } = get();
     const pair = pairs[index];
     if (!pair) return;
 
@@ -154,7 +182,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       validatedAt: new Date().toISOString(),
     };
 
-    set({ pairs: updatedPairs });
+    // Mark pair for history save
+    const newPendingSaves = new Set(pendingSaveIndices);
+    newPendingSaves.add(index);
+
+    set({ pairs: updatedPairs, pendingSaveIndices: newPendingSaves });
   },
 
   // Navigation
@@ -189,6 +221,56 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  // History actions
+  setFileSignatures: (signatures) => set({ fileSignatures: signatures }),
+
+  markPairForSave: (index) => {
+    const { pendingSaveIndices } = get();
+    const newPendingSaves = new Set(pendingSaveIndices);
+    newPendingSaves.add(index);
+    set({ pendingSaveIndices: newPendingSaves });
+  },
+
+  markPairsAsRestored: (indices) => {
+    const { restoredIndices } = get();
+    const newRestored = new Set(restoredIndices);
+    indices.forEach((idx) => newRestored.add(idx));
+    set({ restoredIndices: newRestored });
+  },
+
+  clearPendingSaves: () => set({ pendingSaveIndices: new Set() }),
+
+  applyHistoryMatch: (index, match) => {
+    const { pairs, restoredIndices } = get();
+    const pair = pairs[index];
+    if (!pair) return;
+
+    // Convert string keys back to number keys for pageValidations
+    const pageValidations: Record<number, PageValidation> = {};
+    Object.entries(match.pageValidations).forEach(([key, value]) => {
+      pageValidations[parseInt(key, 10)] = {
+        status: value.status,
+        comment: value.comment || '',
+      };
+    });
+
+    const updatedPairs = [...pairs];
+    updatedPairs[index] = {
+      ...pair,
+      similarity: match.similarity,
+      validation: match.validation,
+      pageValidations,
+      comment: match.comment,
+      validatedAt: match.validatedAt,
+    };
+
+    // Mark as restored
+    const newRestored = new Set(restoredIndices);
+    newRestored.add(index);
+
+    set({ pairs: updatedPairs, restoredIndices: newRestored });
+  },
+
   // Reset
   reset: () =>
     set({
@@ -199,6 +281,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentPage: 0,
       isAnalyzing: false,
       searchQuery: '',
+      fileSignatures: new Map(),
+      pendingSaveIndices: new Set(),
+      restoredIndices: new Set(),
     }),
 }));
 

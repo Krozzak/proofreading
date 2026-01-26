@@ -37,6 +37,14 @@ from services.stripe_service import (
     handle_subscription_deleted,
     handle_invoice_payment_failed,
 )
+from services.history_service import (
+    generate_file_signature,
+    save_comparison_batch,
+    match_files_from_history,
+    get_user_history,
+    get_history_count,
+    delete_history_entry,
+)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -156,6 +164,74 @@ class SubscriptionResponse(BaseModel):
     cancelAtPeriodEnd: bool
     tier: str
     billingPeriod: str | None
+
+
+# History models
+class FileInfoModel(BaseModel):
+    name: str
+    size: int
+
+
+class PageValidationModel(BaseModel):
+    status: str | None  # 'approved' | 'rejected' | None
+    comment: str = ''
+
+
+class ComparisonEntryModel(BaseModel):
+    fileSignature: str
+    code: str
+    originalFile: FileInfoModel | None = None
+    printerFile: FileInfoModel | None = None
+    similarity: float | None = None
+    validation: str = 'pending'
+    pageValidations: dict[str, PageValidationModel] = {}
+    comment: str = ''
+    validatedAt: str | None = None
+
+
+class HistorySaveRequest(BaseModel):
+    comparisons: list[ComparisonEntryModel]
+
+
+class HistorySaveResponse(BaseModel):
+    savedCount: int
+
+
+class HistoryMatchRequest(BaseModel):
+    fileSignatures: list[str]
+
+
+class HistoryMatchEntry(BaseModel):
+    fileSignature: str
+    similarity: float | None
+    validation: str
+    pageValidations: dict[str, PageValidationModel]
+    comment: str
+    validatedAt: str | None
+
+
+class HistoryMatchResponse(BaseModel):
+    matches: dict[str, HistoryMatchEntry]
+
+
+class HistoryEntryResponse(BaseModel):
+    id: str
+    fileSignature: str
+    code: str
+    originalFile: FileInfoModel | None
+    printerFile: FileInfoModel | None
+    similarity: float | None
+    validation: str
+    pageValidations: dict
+    comment: str
+    validatedAt: str | None
+    createdAt: str | None
+    updatedAt: str | None
+
+
+class HistoryListResponse(BaseModel):
+    entries: list[HistoryEntryResponse]
+    total: int
 
 
 # Endpoints
@@ -419,6 +495,167 @@ async def stripe_webhook(
         # Return 200 to prevent Stripe retries for non-recoverable errors
 
     return {"received": True}
+
+
+# History endpoints
+
+@app.post("/api/history/save", response_model=HistorySaveResponse)
+async def save_history(
+    request: HistorySaveRequest,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Save comparison history for authenticated user.
+    PROTECTED - Requires authentication.
+
+    Saves a batch of comparisons to the user's history.
+    Uses upsert behavior - existing entries are updated, new ones created.
+
+    Args:
+        request: HistorySaveRequest with list of comparisons
+
+    Returns:
+        HistorySaveResponse with count of saved entries
+    """
+    try:
+        # Convert Pydantic models to dicts for the service
+        comparisons_data = []
+        for comp in request.comparisons:
+            comp_dict = comp.model_dump()
+            # Convert pageValidations keys back to strings (Firestore doesn't support int keys)
+            if comp_dict.get('pageValidations'):
+                comp_dict['pageValidations'] = {
+                    str(k): v for k, v in comp_dict['pageValidations'].items()
+                }
+            comparisons_data.append(comp_dict)
+
+        saved_count = save_comparison_batch(user.uid, comparisons_data)
+        return HistorySaveResponse(savedCount=saved_count)
+
+    except Exception as e:
+        logger.error(f"History save error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to save history")
+
+
+@app.post("/api/history/match", response_model=HistoryMatchResponse)
+async def match_history(
+    request: HistoryMatchRequest,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Find history entries matching file signatures.
+    PROTECTED - Requires authentication.
+
+    Used to restore previous approvals when user re-uploads same files.
+
+    Args:
+        request: HistoryMatchRequest with list of file signatures
+
+    Returns:
+        HistoryMatchResponse with matching entries
+    """
+    try:
+        matches = match_files_from_history(user.uid, request.fileSignatures)
+
+        # Convert to response format
+        response_matches = {}
+        for sig, match in matches.items():
+            response_matches[sig] = HistoryMatchEntry(
+                fileSignature=match['fileSignature'],
+                similarity=match['similarity'],
+                validation=match['validation'],
+                pageValidations={
+                    str(k): PageValidationModel(
+                        status=v.get('status'),
+                        comment=v.get('comment', '')
+                    )
+                    for k, v in match.get('pageValidations', {}).items()
+                },
+                comment=match['comment'],
+                validatedAt=match['validatedAt'],
+            )
+
+        return HistoryMatchResponse(matches=response_matches)
+
+    except Exception as e:
+        logger.error(f"History match error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to match history")
+
+
+@app.get("/api/history", response_model=HistoryListResponse)
+async def list_history(
+    limit: int = 100,
+    offset: int = 0,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Get user's comparison history.
+    PROTECTED - Requires authentication.
+
+    Returns paginated list of user's past comparisons.
+
+    Args:
+        limit: Maximum entries to return (default 100)
+        offset: Number of entries to skip (for pagination)
+
+    Returns:
+        HistoryListResponse with entries and total count
+    """
+    try:
+        entries = get_user_history(user.uid, limit=limit, offset=offset)
+        total = get_history_count(user.uid)
+
+        response_entries = []
+        for entry in entries:
+            response_entries.append(HistoryEntryResponse(
+                id=entry['id'],
+                fileSignature=entry['fileSignature'],
+                code=entry['code'],
+                originalFile=FileInfoModel(**entry['originalFile']) if entry.get('originalFile') else None,
+                printerFile=FileInfoModel(**entry['printerFile']) if entry.get('printerFile') else None,
+                similarity=entry['similarity'],
+                validation=entry['validation'],
+                pageValidations=entry.get('pageValidations', {}),
+                comment=entry.get('comment', ''),
+                validatedAt=entry.get('validatedAt'),
+                createdAt=entry.get('createdAt'),
+                updatedAt=entry.get('updatedAt'),
+            ))
+
+        return HistoryListResponse(entries=response_entries, total=total)
+
+    except Exception as e:
+        logger.error(f"History list error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to fetch history")
+
+
+@app.delete("/api/history/{file_signature}")
+async def delete_history_item(
+    file_signature: str,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Delete a single history entry.
+    PROTECTED - Requires authentication.
+
+    Args:
+        file_signature: File signature of entry to delete
+
+    Returns:
+        Success status
+    """
+    try:
+        deleted = delete_history_entry(user.uid, file_signature)
+        if deleted:
+            return {"success": True}
+        else:
+            raise HTTPException(status_code=404, detail="Entry not found")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"History delete error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to delete entry")
 
 
 # For local development

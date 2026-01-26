@@ -28,6 +28,7 @@ interface ResultsTableProps {
   batchProgress?: { current: number; total: number };
   onAutoApprove?: () => void;
   threshold?: number;
+  restoredIndices?: Set<number>;
 }
 
 export function ResultsTable({
@@ -45,6 +46,7 @@ export function ResultsTable({
   batchProgress,
   onAutoApprove,
   threshold,
+  restoredIndices,
 }: ResultsTableProps) {
   const filteredPairs = useMemo(() => {
     let result = showMatchedOnly
@@ -205,7 +207,17 @@ export function ResultsTable({
                   onClick={() => onSelectPair(displayIndex)}
                 >
                   <TableCell className="font-mono font-medium">
-                    {pair.code}
+                    <span className="flex items-center gap-1">
+                      {pair.code}
+                      {restoredIndices?.has(displayIndex) && (
+                        <span
+                          className="text-blue-500 cursor-help"
+                          title="Restauré de l'historique"
+                        >
+                          🕐
+                        </span>
+                      )}
+                    </span>
                   </TableCell>
                   <TableCell className="truncate max-w-[200px]">
                     {pair.originalFile?.name || pair.printerFile?.name || '-'}

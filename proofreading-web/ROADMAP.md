@@ -147,6 +147,60 @@ Le backend accepte les origines suivantes :
 
 ---
 
+### Phase 3.5: Historique des Approbations (TERMINÉ)
+
+**Objectif**: Persister les décisions d'approbation pour que les utilisateurs retrouvent leur travail.
+
+| Tâche | Status | Date |
+|-------|--------|------|
+| Modèle Firestore `comparison_history` | Fait | 26/01/2026 |
+| Backend: endpoints `/api/history/*` | Fait | 26/01/2026 |
+| Frontend: hook `useHistorySync` | Fait | 26/01/2026 |
+| Composant `HistoryBanner` non-bloquant | Fait | 26/01/2026 |
+| Page `/history` avec filtres | Fait | 26/01/2026 |
+| Menu utilisateur dropdown | Fait | 26/01/2026 |
+| Indicateur visuel "restauré" | Fait | 26/01/2026 |
+| Index composite Firestore | Fait | 26/01/2026 |
+| Déploiement Cloud Run + Firebase | Fait | 26/01/2026 |
+
+**Implémentation technique**:
+
+- **Signature de fichier**: SHA-256 hash de `orig:{name}:{size}|print:{name}:{size}` (32 caractères)
+- **Document ID**: `{userId}_{fileSignature}` pour upserts efficaces
+- **Sauvegarde debounced**: 2s après validation, 5s après calcul similarité, batch de 10 max
+- **Chargement non-bloquant**: Page compare s'affiche immédiatement, historique charge en background
+- **Banner de restauration**: Propose "Même version" (restaurer) ou "Nouvelle version" (ignorer)
+
+**Structure Firestore** (`comparison_history/{docId}`):
+```
+├── userId: string
+├── fileSignature: string
+├── code: string
+├── originalFile: { name, size } | null
+├── printerFile: { name, size } | null
+├── similarity: number | null
+├── validation: 'pending' | 'approved' | 'rejected' | 'partial'
+├── pageValidations: { [page]: { status, comment } }
+├── comment: string
+├── validatedAt: timestamp | null
+├── createdAt: timestamp
+├── updatedAt: timestamp
+```
+
+**Index Firestore** (déployé via `firebase deploy --only firestore:indexes`):
+- `userId` (ASC) + `updatedAt` (DESC) pour query paginée
+
+**Nouveaux fichiers**:
+- `backend/services/history_service.py` - Service Firestore
+- `lib/history-api.ts` - API client
+- `lib/useHistorySync.ts` - Hook de synchronisation
+- `components/HistoryBanner.tsx` - Banner de restauration
+- `app/history/page.tsx` - Page historique
+- `firestore.indexes.json` - Configuration index
+- `firebase.json` - Configuration Firebase CLI
+
+---
+
 ### Phase 4: Fonctionnalités IA
 
 **Objectif**: Améliorer la précision avec des modèles multimodaux.
@@ -264,6 +318,7 @@ proofreading-web/
 │   ├── page.tsx           # Home (upload)
 │   ├── compare/           # Comparison view
 │   ├── dashboard/         # User dashboard
+│   ├── history/           # Historique des comparaisons
 │   ├── pricing/           # Pricing & checkout
 │   ├── layout.tsx         # Root layout (+ AuthProvider)
 │   └── globals.css        # Global styles
@@ -278,22 +333,26 @@ proofreading-web/
 │       ├── firebase_admin.py   # Firebase Admin SDK init
 │       ├── quota_service.py    # Gestion quotas Firestore
 │       ├── auth_dependency.py  # FastAPI auth dependency
-│       └── stripe_service.py   # Stripe checkout, webhooks, portal
+│       ├── stripe_service.py   # Stripe checkout, webhooks, portal
+│       └── history_service.py  # Gestion historique Firestore
 ├── components/            # React components
 │   ├── ComparisonView.tsx
 │   ├── DropZone.tsx
 │   ├── ResultsTable.tsx
 │   ├── AuthModal.tsx      # Modal login/register
-│   ├── UserMenu.tsx       # Menu utilisateur header
+│   ├── UserMenu.tsx       # Menu utilisateur dropdown
 │   ├── QuotaDisplay.tsx   # Affichage quota restant
+│   ├── HistoryBanner.tsx  # Banner de restauration historique
 │   └── ui/               # Shadcn components
 ├── lib/                   # Utilities
 │   ├── pdf-utils.ts      # API calls (+ token auth)
-│   ├── store.ts          # Zustand state
-│   ├── types.ts          # TypeScript types
+│   ├── store.ts          # Zustand state (+ history)
+│   ├── types.ts          # TypeScript types (+ history)
 │   ├── firebase.ts       # Firebase client config
 │   ├── auth-context.tsx  # React auth context
-│   └── stripe.ts         # Stripe client utilities
+│   ├── stripe.ts         # Stripe client utilities
+│   ├── history-api.ts    # API historique
+│   └── useHistorySync.ts # Hook synchronisation historique
 ├── .env.example          # Environment template
 ├── .env.local            # Variables locales (non committé)
 ├── vercel.json           # Vercel config
@@ -312,4 +371,4 @@ proofreading-web/
 
 ---
 
-*Dernière mise à jour: 26 janvier 2026 - Améliorations UI terminées*
+*Dernière mise à jour: 26 janvier 2026 - Phase 3.5 Historique des Approbations terminée*
