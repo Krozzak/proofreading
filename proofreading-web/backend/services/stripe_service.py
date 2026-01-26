@@ -241,21 +241,30 @@ def handle_checkout_completed(session: dict) -> None:
     # Fetch subscription details
     subscription = stripe.Subscription.retrieve(subscription_id)
 
+    # Access subscription fields safely (Stripe API v2 uses dict-like access)
+    sub_status = subscription.get('status') or getattr(subscription, 'status', 'active')
+    period_end = subscription.get('current_period_end') or getattr(subscription, 'current_period_end', None)
+    cancel_at_end = subscription.get('cancel_at_period_end') or getattr(subscription, 'cancel_at_period_end', False)
+
     db = get_firestore_client()
     user_ref = db.collection('users').document(uid)
 
-    user_ref.set({
+    update_data = {
         'tier': 'pro',
         'stripeCustomerId': customer_id,
         'stripeSubscriptionId': subscription_id,
-        'subscriptionStatus': subscription.status,
-        'subscriptionPeriodEnd': datetime.fromtimestamp(
-            subscription.current_period_end, timezone.utc
-        ).isoformat(),
-        'cancelAtPeriodEnd': subscription.cancel_at_period_end,
+        'subscriptionStatus': sub_status,
+        'cancelAtPeriodEnd': cancel_at_end,
         'billingPeriod': billing_period,
         'upgradedAt': datetime.now(timezone.utc).isoformat(),
-    }, merge=True)
+    }
+
+    if period_end:
+        update_data['subscriptionPeriodEnd'] = datetime.fromtimestamp(
+            period_end, timezone.utc
+        ).isoformat()
+
+    user_ref.set(update_data, merge=True)
 
     logger.info(f"User {uid} upgraded to Pro ({billing_period})")
 
@@ -284,15 +293,20 @@ def handle_subscription_updated(subscription: dict) -> None:
     # Determine tier based on subscription status
     status = subscription.get('status')
     tier = 'pro' if status in ['active', 'trialing'] else 'free'
+    period_end = subscription.get('current_period_end')
 
-    user_ref.set({
+    update_data = {
         'tier': tier,
         'subscriptionStatus': status,
-        'subscriptionPeriodEnd': datetime.fromtimestamp(
-            subscription.get('current_period_end'), timezone.utc
-        ).isoformat(),
         'cancelAtPeriodEnd': subscription.get('cancel_at_period_end', False),
-    }, merge=True)
+    }
+
+    if period_end:
+        update_data['subscriptionPeriodEnd'] = datetime.fromtimestamp(
+            period_end, timezone.utc
+        ).isoformat()
+
+    user_ref.set(update_data, merge=True)
 
     logger.info(f"User {uid} subscription updated: {status}")
 
