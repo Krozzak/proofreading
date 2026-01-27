@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SimilarityBarProps {
@@ -20,6 +20,7 @@ export function SimilarityBar({
 }: SimilarityBarProps) {
   const [displayProgress, setDisplayProgress] = useState(0);
   const [showResult, setShowResult] = useState(false);
+  const animationRef = useRef<number | null>(null);
   const isAboveThreshold = score !== null && score >= threshold;
 
   const heights = {
@@ -34,35 +35,62 @@ export function SimilarityBar({
     lg: 'text-base',
   };
 
-  // Animate progress during calculation
+  // Animate progress during calculation and to final value
   useEffect(() => {
+    // Cancel any existing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
     if (isCalculating) {
       setShowResult(false);
-      setDisplayProgress(0);
 
-      // Animate from 0 to 50% over 10 seconds
+      // Smooth indeterminate animation: oscillate between 20-80%
       const startTime = Date.now();
-      const duration = 10000; // 10 seconds
-      const targetProgress = 50;
-
       const animate = () => {
         const elapsed = Date.now() - startTime;
-        const progress = Math.min((elapsed / duration) * targetProgress, targetProgress);
+        // Use sine wave for smooth back-and-forth motion
+        // Completes one cycle every 2 seconds
+        const cycle = (elapsed % 2000) / 2000;
+        const progress = 20 + Math.sin(cycle * Math.PI * 2) * 30 + 30; // Range: 20-80%
         setDisplayProgress(progress);
 
-        if (elapsed < duration && isCalculating) {
-          requestAnimationFrame(animate);
+        animationRef.current = requestAnimationFrame(animate);
+      };
+
+      animationRef.current = requestAnimationFrame(animate);
+    } else if (score !== null) {
+      // Calculation finished - smoothly animate from current position to final score
+      const startProgress = displayProgress;
+      const targetProgress = score;
+      const startTime = Date.now();
+      const duration = 500; // 500ms for final animation
+
+      const animateToFinal = () => {
+        const elapsed = Date.now() - startTime;
+        const t = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for smooth deceleration
+        const eased = 1 - Math.pow(1 - t, 3);
+        const progress = startProgress + (targetProgress - startProgress) * eased;
+        setDisplayProgress(progress);
+
+        if (t < 1) {
+          animationRef.current = requestAnimationFrame(animateToFinal);
+        } else {
+          setDisplayProgress(score);
+          setShowResult(true);
         }
       };
 
-      const animationId = requestAnimationFrame(animate);
-      return () => cancelAnimationFrame(animationId);
-    } else if (score !== null) {
-      // Calculation finished - animate to final score
-      setDisplayProgress(score);
-      // Show result text after transition completes
-      setTimeout(() => setShowResult(true), 700);
+      animationRef.current = requestAnimationFrame(animateToFinal);
     }
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
   }, [isCalculating, score]);
 
   return (
@@ -93,17 +121,16 @@ export function SimilarityBar({
         />
       )}
 
-      {/* Text content */}
+      {/* Text content - always use text-shadow for readability */}
       <div
         className={cn(
           'absolute inset-0 flex items-center justify-center font-bold',
-          textSizes[size],
-          isCalculating
-            ? 'text-white'
-            : (displayProgress > 30)
-              ? 'text-white'
-              : 'text-foreground'
+          textSizes[size]
         )}
+        style={{
+          color: '#ffffff',
+          textShadow: '0 1px 2px rgba(0,0,0,0.5), 0 0 4px rgba(0,0,0,0.3)',
+        }}
       >
         {isCalculating ? (
           <span className="flex items-center gap-2">
@@ -113,10 +140,12 @@ export function SimilarityBar({
         ) : showResult && score !== null ? (
           <span className="flex items-center gap-2">
             {Math.round(score)}%
-            <span className={cn(
-              'px-2 py-0.5 rounded text-xs font-bold',
-              isAboveThreshold ? 'bg-white/20' : 'bg-white/20'
-            )}>
+            <span
+              className="px-2 py-0.5 rounded text-xs font-bold"
+              style={{
+                backgroundColor: 'rgba(0,0,0,0.25)',
+              }}
+            >
               {isAboveThreshold ? '✓ CONFORME' : '✗ NON CONFORME'}
             </span>
           </span>
