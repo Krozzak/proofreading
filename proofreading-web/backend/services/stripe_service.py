@@ -4,10 +4,12 @@ Handles checkout sessions, subscription management, and webhook processing.
 """
 
 import os
+import re
 import stripe
 import logging
 from typing import Optional, TypedDict
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from services.firebase_admin import get_firestore_client
 
@@ -28,6 +30,35 @@ class SubscriptionInfo(TypedDict):
     customerId: Optional[str]
     subscriptionId: Optional[str]
     billingPeriod: Optional[str]  # 'monthly', 'yearly'
+
+
+# Allowed redirect URL patterns for Stripe checkout/portal
+_ALLOWED_REDIRECT_PATTERNS = [
+    re.compile(r'^https://proofslab\.com(/.*)?$'),
+    re.compile(r'^https://www\.proofslab\.com(/.*)?$'),
+    re.compile(r'^https://proofslab\.vercel\.app(/.*)?$'),
+    re.compile(r'^https://proofreading-.*\.vercel\.app(/.*)?$'),
+    re.compile(r'^http://localhost:\d+(/.*)?$'),
+]
+
+
+def validate_redirect_url(url: str) -> str:
+    """
+    Validate that a redirect URL belongs to an allowed domain.
+    Prevents open redirect attacks via Stripe checkout/portal flows.
+
+    Raises:
+        ValueError: If URL is not in the allowed list
+    """
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError("Invalid redirect URL")
+
+    for pattern in _ALLOWED_REDIRECT_PATTERNS:
+        if pattern.match(url):
+            return url
+
+    raise ValueError("Redirect URL not allowed")
 
 
 def get_price_id(billing_period: str) -> str:
@@ -99,6 +130,9 @@ def create_checkout_session(
     Returns:
         Checkout session URL
     """
+    validate_redirect_url(success_url)
+    validate_redirect_url(cancel_url)
+
     customer_id = get_or_create_stripe_customer(uid, email)
     price_id = get_price_id(billing_period)
 
@@ -143,6 +177,8 @@ def create_customer_portal_session(uid: str, return_url: str) -> str:
     Raises:
         ValueError: If user not found or has no Stripe customer
     """
+    validate_redirect_url(return_url)
+
     db = get_firestore_client()
     user_ref = db.collection('users').document(uid)
     user_doc = user_ref.get()

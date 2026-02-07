@@ -7,11 +7,13 @@ Deploy to Google Cloud Run for serverless execution.
 """
 
 import base64
+import time
+from collections import defaultdict
 from typing import Optional, Literal
-from fastapi import FastAPI, HTTPException, Depends, Request, Header
+from fastapi import FastAPI, HTTPException, Depends, Request, Header, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import logging
 
 # Configure logging
@@ -46,15 +48,17 @@ from services.history_service import (
     delete_history_entry,
 )
 
+# Maximum payload size for base64 PDF/image fields (~50MB decoded)
+MAX_BASE64_LENGTH = 70_000_000  # ~50MB after base64 encoding overhead
+
 # Initialize FastAPI app
 app = FastAPI(
     title="PDF Proofreading API",
     description="API for PDF comparison using SSIM with Firebase Auth",
-    version="2.1.0"
+    version="2.2.0"
 )
 
 # CORS configuration - restrict to known domains
-# Note: allow_origin_regex is used to support Vercel preview deployments
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://proofslab.vercel.app",
@@ -62,17 +66,42 @@ ALLOWED_ORIGINS = [
     "https://www.proofslab.com",
 ]
 
-# Regex to match Vercel preview URLs (e.g., proofreading-xxx-thomas-silliards-projects.vercel.app)
-ALLOWED_ORIGIN_REGEX = r"https://.*\.vercel\.app"
+# Regex to match only this project's Vercel preview URLs
+ALLOWED_ORIGIN_REGEX = r"https://proofreading-[a-z0-9-]+-thomas-silliards-projects\.vercel\.app"
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_origin_regex=ALLOWED_ORIGIN_REGEX,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Stripe-Signature"],
 )
+
+
+# --- Simple in-memory rate limiter for /api/convert ---
+
+class RateLimiter:
+    """Simple sliding-window rate limiter per IP."""
+
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._requests: dict[str, list[float]] = defaultdict(list)
+
+    def is_allowed(self, key: str) -> bool:
+        now = time.time()
+        window_start = now - self.window_seconds
+        # Remove expired entries
+        self._requests[key] = [t for t in self._requests[key] if t > window_start]
+        if len(self._requests[key]) >= self.max_requests:
+            return False
+        self._requests[key].append(now)
+        return True
+
+
+# 60 convert requests per minute per IP
+convert_rate_limiter = RateLimiter(max_requests=60, window_seconds=60)
 
 
 @app.exception_handler(Exception)
@@ -85,13 +114,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {exc}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={"detail": str(exc)},
+        content={"detail": "Internal server error"},
     )
 
 
 # Request/Response models
 class ConvertRequest(BaseModel):
-    pdf: str  # Base64 encoded PDF
+    pdf: str = Field(max_length=MAX_BASE64_LENGTH)  # Base64 encoded PDF
     page: int = 0
 
 
@@ -104,8 +133,8 @@ class ConvertResponse(BaseModel):
 
 
 class CompareRequest(BaseModel):
-    image1: str  # Base64 encoded PNG
-    image2: str  # Base64 encoded PNG
+    image1: str = Field(max_length=MAX_BASE64_LENGTH)  # Base64 encoded PNG
+    image2: str = Field(max_length=MAX_BASE64_LENGTH)  # Base64 encoded PNG
     autoCrop: bool = True
 
 
@@ -242,7 +271,7 @@ async def health_check():
     Health check endpoint for Cloud Run.
     PUBLIC - No authentication required.
     """
-    return HealthResponse(status="healthy", version="2.1.0")
+    return HealthResponse(status="healthy", version="2.2.0")
 
 
 @app.get("/api/quota", response_model=QuotaResponse)
@@ -258,25 +287,26 @@ async def get_user_quota(user: AuthenticatedUser = Depends(get_current_user)):
 @app.post("/api/convert", response_model=ConvertResponse)
 async def convert_pdf(
     request: ConvertRequest,
+    http_request: Request,
     user: Optional[AuthenticatedUser] = Depends(get_optional_user)
 ):
     """
     Convert a PDF page to a PNG image.
     PUBLIC - Works for both authenticated and anonymous users.
     No quota consumed for conversion (only for comparison).
-
-    Args:
-        request: ConvertRequest with base64 PDF and page number
-        user: Optional authenticated user
-
-    Returns:
-        ConvertResponse with base64 PNG image
+    Rate limited to 60 requests/minute per IP.
     """
+    # Rate limit by IP
+    client_ip = get_client_ip(http_request)
+    if not convert_rate_limiter.is_allowed(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many conversion requests. Please try again later."
+        )
+
     try:
-        # Decode PDF
         pdf_bytes = base64.b64decode(request.pdf)
 
-        # Convert to image
         img_bytes, total_pages = pdf_to_image(pdf_bytes, request.page)
 
         if img_bytes:
@@ -293,7 +323,8 @@ async def convert_pdf(
             )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"PDF conversion error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="PDF conversion failed")
 
 
 def get_client_ip(request: Request) -> str:
@@ -313,30 +344,13 @@ async def compare_images(
 ):
     """
     Compare two images using SSIM.
-    PUBLIC - Works for both authenticated and anonymous users with quota:
-    - Anonymous: 1 comparison/day (based on IP)
-    - Free account: 5 comparisons/day
-    - Pro account: 100 comparisons/day
-    - Enterprise: unlimited
-
-    Args:
-        request: CompareRequest with two base64 images
-        http_request: FastAPI request for IP extraction
-        user: Optional authenticated user
-
-    Returns:
-        CompareResponse with similarity score, metadata, and updated quota
-
-    Raises:
-        HTTPException 429: If daily quota exceeded
+    PUBLIC - Works for both authenticated and anonymous users with quota.
     """
     # Check and increment quota based on auth status
     if user:
-        # Authenticated user
         success, quota = check_and_increment_quota(user.uid, user.tier)
         quota_message = "Quota journalier atteint. Passez au plan Pro pour plus de comparaisons."
     else:
-        # Anonymous user - use IP-based quota
         client_ip = get_client_ip(http_request)
         success, quota = check_and_increment_anonymous_quota(client_ip)
         quota_message = "Limite gratuite atteinte (1/jour). Connectez-vous pour 5 comparaisons/jour gratuites."
@@ -349,11 +363,9 @@ async def compare_images(
         )
 
     try:
-        # Decode images
         img1_bytes = base64.b64decode(request.image1)
         img2_bytes = base64.b64decode(request.image2)
 
-        # Calculate similarity
         result = calculate_similarity(img1_bytes, img2_bytes, request.autoCrop)
 
         return CompareResponse(
@@ -368,7 +380,8 @@ async def compare_images(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Image comparison error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Image comparison failed")
 
 
 # Stripe endpoints
@@ -381,12 +394,6 @@ async def stripe_create_checkout(
     """
     Create a Stripe Checkout session for Pro subscription.
     PROTECTED - Requires authentication.
-
-    Args:
-        request: CheckoutRequest with billing period and redirect URLs
-
-    Returns:
-        CheckoutResponse with checkout session URL
     """
     try:
         checkout_url = create_checkout_session(
@@ -412,12 +419,6 @@ async def stripe_create_portal(
     """
     Create a Stripe Customer Portal session.
     PROTECTED - Requires authentication.
-
-    Args:
-        request: PortalRequest with return URL
-
-    Returns:
-        PortalResponse with customer portal URL
     """
     try:
         portal_url = create_customer_portal_session(
@@ -439,9 +440,6 @@ async def get_user_subscription(
     """
     Get current user's subscription information.
     PROTECTED - Requires authentication.
-
-    Returns:
-        SubscriptionResponse with subscription details and user tier
     """
     info = get_subscription_info(user.uid)
     return SubscriptionResponse(
@@ -461,9 +459,6 @@ async def stripe_webhook(
     """
     Handle Stripe webhook events.
     PUBLIC - No authentication (uses webhook signature verification).
-
-    This endpoint receives events from Stripe and updates user subscriptions
-    in Firestore accordingly.
     """
     payload = await request.body()
 
@@ -471,9 +466,8 @@ async def stripe_webhook(
         event = verify_webhook_signature(payload, stripe_signature)
     except ValueError as e:
         logger.warning(f"Webhook verification failed: {e}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
 
-    # Handle events
     event_type = event['type']
     data = event['data']['object']
 
@@ -492,7 +486,8 @@ async def stripe_webhook(
             logger.info(f"Unhandled webhook event: {event_type}")
     except Exception as e:
         logger.error(f"Webhook handler error: {e}", exc_info=True)
-        # Return 200 to prevent Stripe retries for non-recoverable errors
+        # Return 500 so Stripe retries for recoverable errors
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
 
     return {"received": True}
 
@@ -507,22 +502,11 @@ async def save_history(
     """
     Save comparison history for authenticated user.
     PROTECTED - Requires authentication.
-
-    Saves a batch of comparisons to the user's history.
-    Uses upsert behavior - existing entries are updated, new ones created.
-
-    Args:
-        request: HistorySaveRequest with list of comparisons
-
-    Returns:
-        HistorySaveResponse with count of saved entries
     """
     try:
-        # Convert Pydantic models to dicts for the service
         comparisons_data = []
         for comp in request.comparisons:
             comp_dict = comp.model_dump()
-            # Convert pageValidations keys back to strings (Firestore doesn't support int keys)
             if comp_dict.get('pageValidations'):
                 comp_dict['pageValidations'] = {
                     str(k): v for k, v in comp_dict['pageValidations'].items()
@@ -545,19 +529,10 @@ async def match_history(
     """
     Find history entries matching file signatures.
     PROTECTED - Requires authentication.
-
-    Used to restore previous approvals when user re-uploads same files.
-
-    Args:
-        request: HistoryMatchRequest with list of file signatures
-
-    Returns:
-        HistoryMatchResponse with matching entries
     """
     try:
         matches = match_files_from_history(user.uid, request.fileSignatures)
 
-        # Convert to response format
         response_matches = {}
         for sig, match in matches.items():
             response_matches[sig] = HistoryMatchEntry(
@@ -584,22 +559,13 @@ async def match_history(
 
 @app.get("/api/history", response_model=HistoryListResponse)
 async def list_history(
-    limit: int = 100,
-    offset: int = 0,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Get user's comparison history.
     PROTECTED - Requires authentication.
-
-    Returns paginated list of user's past comparisons.
-
-    Args:
-        limit: Maximum entries to return (default 100)
-        offset: Number of entries to skip (for pagination)
-
-    Returns:
-        HistoryListResponse with entries and total count
     """
     try:
         entries = get_user_history(user.uid, limit=limit, offset=offset)
@@ -637,12 +603,6 @@ async def delete_history_item(
     """
     Delete a single history entry.
     PROTECTED - Requires authentication.
-
-    Args:
-        file_signature: File signature of entry to delete
-
-    Returns:
-        Success status
     """
     try:
         deleted = delete_history_entry(user.uid, file_signature)

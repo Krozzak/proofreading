@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default: deny all direct client access.
+    // All data is accessed through the backend API using Firebase Admin SDK,
+    // which bypasses these rules. This ensures clients cannot tamper with
+    // quotas, tiers, or other users' data.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

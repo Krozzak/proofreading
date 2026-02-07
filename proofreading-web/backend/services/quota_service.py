@@ -1,11 +1,12 @@
 """
 Quota management service using Firestore.
-Handles daily comparison limits for users.
+Handles daily comparison limits for users with atomic transactions.
 """
 
+import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import TypedDict
-from google.cloud.firestore_v1 import FieldFilter
+from google.cloud import firestore as cloud_firestore
 from services.firebase_admin import get_firestore_client
 
 
@@ -38,6 +39,17 @@ def get_reset_time() -> str:
     return tomorrow.isoformat()
 
 
+def _build_quota_info(used: int, tier: str) -> QuotaInfo:
+    """Build a QuotaInfo dict from current usage and tier."""
+    limit = QUOTA_LIMITS.get(tier, QUOTA_LIMITS['free'])
+    return QuotaInfo(
+        used=used,
+        limit=limit,
+        remaining=max(0, limit - used),
+        resetsAt=get_reset_time(),
+    )
+
+
 def get_quota(uid: str, tier: str = 'free') -> QuotaInfo:
     """
     Get current quota for a user.
@@ -57,13 +69,10 @@ def get_quota(uid: str, tier: str = 'free') -> QuotaInfo:
     quota_ref = db.collection('quotas').document(uid)
     quota_doc = quota_ref.get()
 
-    limit = QUOTA_LIMITS.get(tier, QUOTA_LIMITS['free'])
-
     if quota_doc.exists:
         data = quota_doc.to_dict()
         last_reset = data.get('lastReset', '')
 
-        # Reset quota if it's a new day
         if last_reset != today:
             quota_ref.set({
                 'comparisons': 0,
@@ -73,64 +82,59 @@ def get_quota(uid: str, tier: str = 'free') -> QuotaInfo:
         else:
             used = data.get('comparisons', 0)
     else:
-        # Create new quota document for first-time user
         quota_ref.set({
             'comparisons': 0,
             'lastReset': today,
         })
         used = 0
 
-    return QuotaInfo(
-        used=used,
-        limit=limit,
-        remaining=max(0, limit - used),
-        resetsAt=get_reset_time(),
-    )
+    return _build_quota_info(used, tier)
 
 
-def increment_quota(uid: str) -> None:
+@cloud_firestore.transactional
+def _check_and_increment_in_transaction(transaction, quota_ref, today: str, limit: int):
     """
-    Increment the comparison count for a user.
+    Atomically check quota and increment within a Firestore transaction.
+    Prevents race conditions from concurrent requests.
 
-    Uses Firestore increment to avoid race conditions.
-
-    Args:
-        uid: Firebase user ID
+    Returns:
+        Tuple of (success: bool, used: int)
     """
-    from google.cloud.firestore_v1 import Increment
+    snapshot = quota_ref.get(transaction=transaction)
 
-    db = get_firestore_client()
-    today = get_today_string()
+    if snapshot.exists:
+        data = snapshot.to_dict()
+        last_reset = data.get('lastReset', '')
 
-    quota_ref = db.collection('quotas').document(uid)
-    quota_doc = quota_ref.get()
-
-    if quota_doc.exists:
-        data = quota_doc.to_dict()
-        if data.get('lastReset') != today:
+        if last_reset != today:
             # New day - reset and set to 1
-            quota_ref.set({
+            transaction.set(quota_ref, {
                 'comparisons': 1,
                 'lastReset': today,
             })
+            return True, 1
         else:
-            # Same day - increment
-            quota_ref.update({
-                'comparisons': Increment(1),
-            })
+            current = data.get('comparisons', 0)
+            if current >= limit:
+                return False, current
+            new_count = current + 1
+            transaction.update(quota_ref, {'comparisons': new_count})
+            return True, new_count
     else:
         # First comparison ever
-        quota_ref.set({
+        transaction.set(quota_ref, {
             'comparisons': 1,
             'lastReset': today,
         })
+        return True, 1
 
 
 def check_and_increment_quota(uid: str, tier: str = 'free') -> tuple[bool, QuotaInfo]:
     """
-    Check if user has quota remaining and increment if so.
+    Atomically check if user has quota remaining and increment if so.
 
-    This is the main function to call before allowing a comparison.
+    Uses a Firestore transaction to prevent race conditions where
+    concurrent requests could bypass the quota limit.
 
     Args:
         uid: Firebase user ID
@@ -141,19 +145,15 @@ def check_and_increment_quota(uid: str, tier: str = 'free') -> tuple[bool, Quota
         - success (bool): True if quota was available and incremented
         - quota_info (QuotaInfo): Updated quota information
     """
-    # Get current quota first
-    quota = get_quota(uid, tier)
+    db = get_firestore_client()
+    today = get_today_string()
+    limit = QUOTA_LIMITS.get(tier, QUOTA_LIMITS['free'])
+    quota_ref = db.collection('quotas').document(uid)
 
-    # Check if quota exceeded
-    if quota['remaining'] <= 0:
-        return False, quota
+    transaction = db.transaction()
+    success, used = _check_and_increment_in_transaction(transaction, quota_ref, today, limit)
 
-    # Increment the quota
-    increment_quota(uid)
-
-    # Return updated quota info
-    updated_quota = get_quota(uid, tier)
-    return True, updated_quota
+    return success, _build_quota_info(used, tier)
 
 
 def get_user_tier(uid: str) -> str:
@@ -187,9 +187,7 @@ def get_anonymous_quota(ip_address: str) -> QuotaInfo:
     Returns:
         QuotaInfo with 1 comparison/day limit
     """
-    # Use IP hash as document ID to avoid storing raw IPs
-    import hashlib
-    ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()[:16]
+    ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()
     uid = f"anon_{ip_hash}"
 
     return get_quota(uid, 'anonymous')
@@ -205,8 +203,7 @@ def check_and_increment_anonymous_quota(ip_address: str) -> tuple[bool, QuotaInf
     Returns:
         Tuple of (success, quota_info)
     """
-    import hashlib
-    ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()[:16]
+    ip_hash = hashlib.sha256(ip_address.encode()).hexdigest()
     uid = f"anon_{ip_hash}"
 
     return check_and_increment_quota(uid, 'anonymous')

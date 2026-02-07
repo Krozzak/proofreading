@@ -20,6 +20,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Create non-root user for security
+RUN useradd -r -u 1001 -s /usr/sbin/nologin appuser
+USER appuser
+
 # Expose port (Cloud Run uses PORT env variable)
 EXPOSE 8080
 
