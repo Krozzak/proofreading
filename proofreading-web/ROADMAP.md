@@ -36,7 +36,7 @@
 **URLs de production:**
 
 - Frontend: <https://proofslab.com>
-- Backend API: <https://proofslab-api-851358345702.europe-west1.run.app>
+- Backend API: <https://proofslab-api-851358345702.northamerica-northeast1.run.app>
 
 **Projet GCP:** `proofslab-3f8fe` (Firebase + Cloud Run)
 
@@ -105,7 +105,7 @@ Le backend accepte les origines suivantes :
 - `https://proofslab.vercel.app`
 - `https://proofslab.com`
 - `https://www.proofslab.com`
-- `https://*.vercel.app` (regex pour les previews Vercel)
+- `https://proofreading-*-thomas-silliards-projects.vercel.app` (regex restreint aux previews du projet)
 
 ---
 
@@ -143,7 +143,7 @@ Le backend accepte les origines suivantes :
 **URLs Stripe**:
 
 - Dashboard: <https://dashboard.stripe.com>
-- Webhook endpoint: `https://proofslab-api-851358345702.europe-west1.run.app/api/stripe/webhook`
+- Webhook endpoint: `https://proofslab-api-851358345702.northamerica-northeast1.run.app/api/stripe/webhook`
 
 ---
 
@@ -198,6 +198,64 @@ Le backend accepte les origines suivantes :
 - `app/history/page.tsx` - Page historique
 - `firestore.indexes.json` - Configuration index
 - `firebase.json` - Configuration Firebase CLI
+
+---
+
+### Phase 3.6: Audit de Sécurité (TERMINÉ)
+
+**Objectif**: Sécuriser l'application pour la production.
+
+| Tâche | Status | Date |
+|-------|--------|------|
+| Firestore Security Rules (bloquer accès client direct) | Fait | 07/02/2026 |
+| Quota atomique (Firestore transactions) | Fait | 07/02/2026 |
+| Validation URLs redirection Stripe (anti open redirect) | Fait | 07/02/2026 |
+| CORS regex restreint (uniquement ce projet Vercel) | Fait | 07/02/2026 |
+| Rate limiting `/api/convert` (60/min par IP) | Fait | 07/02/2026 |
+| Limite taille payload base64 (~50MB max) | Fait | 07/02/2026 |
+| Masquage erreurs internes (messages génériques) | Fait | 07/02/2026 |
+| Container non-root (appuser UID 1001) | Fait | 07/02/2026 |
+| Webhook Stripe: retour 500 pour retry | Fait | 07/02/2026 |
+| Pagination bornée (limit 1-500, offset >= 0) | Fait | 07/02/2026 |
+| Dépendances pinées (versions exactes) | Fait | 07/02/2026 |
+| Hash IP complet (SHA-256 non tronqué) | Fait | 07/02/2026 |
+| Migration région Cloud Run (Montréal) | Fait | 07/02/2026 |
+
+**Détails techniques**:
+
+- **Firestore Rules**: `allow read, write: if false` - tout passe par le backend Admin SDK
+- **Quota atomique**: `@cloud_firestore.transactional` empêche les requêtes concurrentes de dépasser la limite
+- **CORS**: Regex restreint à `proofreading-[a-z0-9-]+-thomas-silliards-projects\.vercel\.app`
+- **Rate limiter**: Sliding window en mémoire, 60 requêtes/minute par IP
+- **Payload**: `Field(max_length=70_000_000)` sur les champs base64 Pydantic
+- **Région**: `northamerica-northeast1` (Montréal) - conformité LPRPDE, latence réduite depuis le Canada
+
+---
+
+### Phase 3.7: Sécurité Avancée (À FAIRE)
+
+**Objectif**: Renforcer la sécurité avec des mesures avancées.
+
+| Tâche | Status | Priorité |
+|-------|--------|----------|
+| Rate limiter externe (Redis ou Cloud Armor) | À faire | Haute |
+| Content Security Policy (CSP) headers Next.js | À faire | Haute |
+| Dependency scanning automatique (Dependabot/Snyk) | À faire | Haute |
+| Alertes Cloud Logging (401/403/429 répétés) | À faire | Moyenne |
+| Sanitisation PDF (validation structure avant PyMuPDF) | À faire | Moyenne |
+| Vérification email obligatoire (comptes Free) | À faire | Moyenne |
+| Passer Stripe en mode live (clés `pk_live_`) | À faire | Haute |
+| Cookies HTTPS-only (Secure, HttpOnly, SameSite) | À faire | Basse |
+
+**Détails**:
+
+- **Rate limiter externe**: Le rate limiter actuel est en mémoire, donc pas partagé entre les instances Cloud Run. Redis (via Memorystore) ou Cloud Armor permettrait une limite globale fiable.
+- **CSP headers**: Ajouter dans `next.config.ts` des headers `Content-Security-Policy` pour bloquer les scripts/styles non autorisés (protection XSS).
+- **Dependency scanning**: Activer Dependabot sur GitHub pour recevoir des alertes sur les CVE des dépendances Python et npm.
+- **Cloud Logging alerts**: Configurer des alertes dans GCP Monitoring quand un seuil de 401/403/429 est dépassé (détection brute force / abus).
+- **Sanitisation PDF**: Valider la structure du PDF (nombre de pages, taille, headers) avant de le passer à PyMuPDF pour éviter les exploits via PDF malformés.
+- **Vérification email**: Bloquer les comparaisons pour les comptes Free dont l'email n'est pas vérifié (Firebase Auth supporte nativement `emailVerified`).
+- **Stripe live**: Remplacer `pk_test_` par `pk_live_` et les secrets correspondants dans GCP Secret Manager.
 
 ---
 
@@ -323,7 +381,7 @@ proofreading-web/
 │   ├── layout.tsx         # Root layout (+ AuthProvider)
 │   └── globals.css        # Global styles
 ├── backend/               # API Python (Cloud Run)
-│   ├── main.py           # FastAPI app (v2.1.0 avec auth)
+│   ├── main.py           # FastAPI app (v2.2.0 avec auth + sécurité)
 │   ├── Dockerfile        # Container config
 │   ├── requirements.txt  # Python deps (+ firebase-admin)
 │   ├── cloudbuild.yaml   # Deployment config (+ secrets)
@@ -371,4 +429,4 @@ proofreading-web/
 
 ---
 
-*Dernière mise à jour: 26 janvier 2026 - Phase 3.5 Historique des Approbations terminée*
+*Dernière mise à jour: 7 février 2026 - Phase 3.6 Audit de Sécurité terminée, migration Montréal*
