@@ -245,9 +245,20 @@ The `PrinterProofreading.spec` configures PyInstaller:
 - **File limits**: Web app has 500MB upload limit configured
 
 ### Security Notes
-- **Secret key**: Web app uses hardcoded secret key (should be environment variable in production)
-- **File uploads**: Original filenames are preserved for matching; subdirectories are created as needed
-- **Temporary files**: Not automatically cleaned up, requires manual deletion
+- **Firestore Rules**: All client-side access is denied (`allow read, write: if false`). All data access goes through the backend API using Firebase Admin SDK which bypasses rules.
+- **Quota atomicity**: Quota check+increment uses Firestore transactions to prevent race conditions from concurrent requests bypassing limits.
+- **CORS**: Origins restricted to `proofslab.com`, `proofslab.vercel.app`, and project-specific Vercel preview URLs. Methods limited to `GET, POST, DELETE, OPTIONS`. Headers limited to `Authorization, Content-Type, Stripe-Signature`.
+- **Stripe redirect validation**: All `successUrl`, `cancelUrl`, and `returnUrl` parameters are validated against allowed domains to prevent open redirect attacks.
+- **Rate limiting**: `/api/convert` is rate limited to 60 requests/minute per IP (in-memory sliding window).
+- **Payload limits**: Base64 fields (`pdf`, `image1`, `image2`) are capped at ~50MB via Pydantic `max_length`.
+- **Error masking**: Internal exception details are never returned to clients. Generic messages are returned, details are logged server-side only.
+- **Container security**: Docker container runs as non-root user (`appuser`, UID 1001).
+- **Webhook resilience**: Stripe webhook handler returns 500 on processing errors so Stripe retries.
+- **Pagination bounds**: History `limit` capped at 500, `offset` must be >= 0.
+- **Pinned dependencies**: All Python dependencies use exact versions (`==`) in `requirements.txt` to prevent supply chain attacks.
+- **Secrets management**: Backend secrets (Stripe keys, Firebase service account) stored in GCP Secret Manager, injected at deploy time.
+- **File uploads (legacy)**: Original filenames are preserved for matching; subdirectories are created as needed.
+- **Temporary files (legacy)**: Not automatically cleaned up, requires manual deletion.
 
 ## Recent Fixes (January 2026)
 
@@ -291,26 +302,75 @@ Usage quotas are managed per user tier:
 Quota data stored in Firestore (`users/{uid}` and `anonymous_quota/{ip_hash}`).
 
 ### Backend API Endpoints
+
 - `GET /api/health` - Health check (public)
 - `GET /api/quota` - Get user's quota info (authenticated)
-- `POST /api/convert` - Convert PDF to image (public, no quota)
+- `POST /api/convert` - Convert PDF to image (public, rate limited 60/min per IP)
 - `POST /api/compare` - Compare two images (quota-limited)
+- `POST /api/stripe/checkout` - Create Stripe checkout session (authenticated)
+- `POST /api/stripe/portal` - Create Stripe customer portal session (authenticated)
+- `GET /api/subscription` - Get subscription info (authenticated)
+- `POST /api/stripe/webhook` - Stripe webhook handler (public, signature-verified)
+- `POST /api/history/save` - Save comparison history (authenticated)
+- `POST /api/history/match` - Match files from history (authenticated)
+- `GET /api/history` - List comparison history (authenticated, paginated)
+- `DELETE /api/history/{file_signature}` - Delete history entry (authenticated)
 
 ### Cloud Run Configuration
-The backend deploys to Cloud Run with:
-- Region: `europe-west1`
-- Memory: 1Gi
-- Secret: `firebase-service-account` from Secret Manager
 
-To set up the secret:
+The backend deploys to Cloud Run with:
+
+- Region: `northamerica-northeast1` (Montreal, Canada)
+- Memory: 1Gi
+- CPU: 1
+- Concurrency: 10
+- Max instances: 10
+- Secrets from GCP Secret Manager:
+  - `firebase-service-account` - Firebase Admin SDK credentials
+  - `stripe-secret-key` - Stripe API secret key
+  - `stripe-webhook-secret` - Stripe webhook signing secret
+  - `stripe-price-monthly` - Stripe monthly price ID
+  - `stripe-price-yearly` - Stripe yearly price ID
+
+To set up a secret:
+
 ```bash
-# Create secret from Firebase service account JSON
 gcloud secrets create firebase-service-account \
   --data-file=path/to/serviceAccountKey.json \
   --project=proofslab-3f8fe
 ```
 
 ## Version Information
-- **proofreading-web**: v1.2.0 (frontend) / v2.1.0 (backend API)
+
+- **proofreading-web**: v1.3.0 (frontend) / v2.2.0 (backend API)
 - **STANDALONE_EXE**: v1.0.0 (hardcoded in printer_proofreading.py)
 - **PROOFREADING_WEB (legacy)**: No explicit version tracking
+
+## Security Audit (February 2026)
+
+### Fixes Applied
+
+1. **Firestore Security Rules**: Deployed rules blocking all direct client access. Data is only accessible through the backend API via Firebase Admin SDK.
+2. **Atomic Quota Enforcement**: Replaced read-then-write quota logic with Firestore transactions (`@cloud_firestore.transactional`) to prevent concurrent requests from bypassing limits.
+3. **Open Redirect Prevention**: Stripe redirect URLs (`successUrl`, `cancelUrl`, `returnUrl`) are validated against an allowlist of domains before being passed to Stripe.
+4. **CORS Hardening**: Restricted `allow_origin_regex` from `.*\.vercel\.app` (any Vercel site) to only this project's preview URLs. Limited allowed methods and headers.
+5. **Rate Limiting**: Added in-memory sliding window rate limiter on `/api/convert` (60 req/min per IP) to prevent abuse.
+6. **Payload Size Limits**: Base64 fields capped at ~50MB via Pydantic `Field(max_length=70_000_000)`.
+7. **Error Masking**: Internal exception details are no longer returned to clients. Generic error messages are sent, full details are logged server-side.
+8. **Non-root Container**: Dockerfile now creates and runs as `appuser` (UID 1001) instead of root.
+9. **Webhook Error Handling**: Stripe webhook handler now returns HTTP 500 on processing errors, allowing Stripe to retry failed events.
+10. **Pagination Bounds**: History endpoint `limit` bounded to 1-500, `offset` bounded to >= 0 via `Query()` validators.
+11. **Pinned Dependencies**: All Python dependencies use exact versions (`==`) in `requirements.txt`.
+12. **IP Hash**: Anonymous quota now uses full SHA-256 hash (previously truncated to 16 chars).
+13. **Region Migration**: Backend moved from `europe-west1` (Belgium) to `northamerica-northeast1` (Montreal) for lower latency from Canada.
+
+### Future Security Improvements (Roadmap)
+
+- **External rate limiter**: Replace in-memory rate limiter with Redis or Cloud Armor for persistence across Cloud Run instances.
+- **Content Security Policy (CSP)**: Add CSP headers to the Next.js frontend to mitigate XSS.
+- **HTTPS-only cookies**: Ensure all auth cookies use `Secure`, `HttpOnly`, and `SameSite=Strict` flags.
+- **Dependency scanning**: Set up automated vulnerability scanning (e.g., Dependabot, Snyk) on GitHub.
+- **Logging & monitoring**: Add Cloud Logging alerts for repeated 401/403/429 errors to detect brute force or abuse patterns.
+- **PDF input sanitization**: Validate PDF structure before processing with PyMuPDF to mitigate crafted PDF exploits.
+- **Email verification**: Require email verification before allowing comparisons on free accounts.
+- **Stripe live keys**: Migrate from test mode (`pk_test_`) to live keys (`pk_live_`) for production payments.
