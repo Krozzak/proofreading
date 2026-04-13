@@ -232,19 +232,19 @@ Le backend accepte les origines suivantes :
 
 ---
 
-### Phase 3.7: Sécurité Avancée (À FAIRE)
+### Phase 3.7: Sécurité Avancée (EN COURS)
 
 **Objectif**: Renforcer la sécurité avec des mesures avancées.
 
 | Tâche | Status | Priorité |
 |-------|--------|----------|
+| Content Security Policy (CSP) headers Next.js | **Fait** | Haute |
+| Passer Stripe en mode live (clés `pk_live_`) | **Fait** | Haute |
 | Rate limiter externe (Redis ou Cloud Armor) | À faire | Haute |
-| Content Security Policy (CSP) headers Next.js | À faire | Haute |
 | Dependency scanning automatique (Dependabot/Snyk) | À faire | Haute |
 | Alertes Cloud Logging (401/403/429 répétés) | À faire | Moyenne |
 | Sanitisation PDF (validation structure avant PyMuPDF) | À faire | Moyenne |
 | Vérification email obligatoire (comptes Free) | À faire | Moyenne |
-| Passer Stripe en mode live (clés `pk_live_`) | À faire | Haute |
 | Cookies HTTPS-only (Secure, HttpOnly, SameSite) | À faire | Basse |
 
 **Détails**:
@@ -290,6 +290,8 @@ Le backend accepte les origines suivantes :
 | Blog / tutoriels | À faire |
 | Intégration analytics | À faire |
 | Nom de domaine personnalisé | Fait (proofslab.com) |
+| i18n FR/EN avec next-intl (toggle langue) | À faire |
+| Google Translate activé (autres langues) | Fait (natif navigateur) |
 
 ---
 
@@ -429,4 +431,4 @@ proofreading-web/
 
 ---
 
-*Dernière mise à jour: 7 février 2026 - Phase 3.6 Audit de Sécurité terminée, migration Montréal*
+*Dernière mise à jour: 13 avril 2026 - v1.3.0 — CSP headers, Stripe live, onboarding home page, i18n roadmapé Phase 5*

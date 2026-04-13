@@ -67,7 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentPage: 0,
   threshold: 85,
   isAnalyzing: false,
-  showMatchedOnly: false,
+  showMatchedOnly: true,
   searchQuery: '',
   autoCalculate: false,
 
@@ -280,6 +280,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       currentIndex: 0,
       currentPage: 0,
       isAnalyzing: false,
+      showMatchedOnly: true,
       searchQuery: '',
       fileSignatures: new Map(),
       pendingSaveIndices: new Set(),
