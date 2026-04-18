@@ -79,15 +79,15 @@ function DropTile({
       style={{
         position: 'relative',
         background: hasFiles
-          ? `color-mix(in oklab, ${color} 8%, var(--background))`
+          ? `color-mix(in oklab, ${color} 8%, var(--surface-alt))`
           : isDragOver
-          ? `color-mix(in oklab, ${color} 6%, var(--background))`
-          : 'var(--card)',
-        border: `2px ${hasFiles || isDragOver ? 'solid' : 'dashed'} ${hasFiles || isDragOver ? color : 'var(--border)'}`,
+          ? `color-mix(in oklab, ${color} 6%, var(--surface-alt))`
+          : 'var(--surface-alt)',
+        border: `2px ${hasFiles || isDragOver ? 'solid' : 'dashed'} ${hasFiles || isDragOver ? color : 'var(--border-strong)'}`,
         borderRadius: 24,
-        padding: '28px 28px 24px',
+        padding: '32px',
         cursor: 'pointer',
-        minHeight: 200,
+        minHeight: 260,
         display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
         transition: 'all .2s',
       }}
@@ -255,7 +255,7 @@ export default function WorkspacePage() {
 
           {/* Colonne gauche : threshold */}
           <div style={{
-            background: 'var(--card)', border: '1px solid var(--border)',
+            background: 'var(--surface-alt)', border: '1px solid var(--border-strong)',
             borderRadius: 24, padding: 32,
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
@@ -274,7 +274,7 @@ export default function WorkspacePage() {
 
             {/* Slider custom Spectrum */}
             <div style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
-              <div style={{ position: 'relative', width: '100%', height: 6, borderRadius: 999, background: 'var(--muted)' }}>
+              <div style={{ position: 'relative', width: '100%', height: 6, borderRadius: 999, background: 'var(--border-strong)' }}>
                 <div style={{
                   position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 999,
                   width: `${thresholdPct}%`,
@@ -285,7 +285,7 @@ export default function WorkspacePage() {
                   left: `${thresholdPct}%`,
                   transform: 'translate(-50%, -50%)',
                   width: 18, height: 18, borderRadius: '50%',
-                  background: 'var(--card)', border: '2px solid var(--c4)',
+                  background: 'var(--surface-alt)', border: '2px solid var(--c4)',
                   boxShadow: '0 2px 6px rgba(0,0,0,.18)',
                   pointerEvents: 'none',
                 }} />
@@ -360,7 +360,7 @@ export default function WorkspacePage() {
           marginTop: 16,
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 20px',
-          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14,
+          background: 'var(--surface-alt)', border: '1px solid var(--border-strong)', borderRadius: 14,
           fontSize: 13, color: 'var(--muted-foreground)',
         }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, color: 'var(--c4)' }}>

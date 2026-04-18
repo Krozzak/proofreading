@@ -132,7 +132,7 @@ export default function HomePage() {
           }}>
             <div style={{ fontSize: 13, fontWeight: 500, opacity: 0.55, marginBottom: 20 }}>01 — Précision SSIM</div>
             <h3 style={{ fontSize: 'clamp(32px, 3.5vw, 48px)', margin: 0, lineHeight: 1.05, letterSpacing: '-0.03em', fontWeight: 500 }}>
-              Pixel par pixel.<br />Littéralement.
+              Pixel par pixel. Littéralement.
             </h3>
             <p style={{ fontSize: 16, lineHeight: 1.5, opacity: 0.65, maxWidth: 460, marginTop: 20 }}>
               Score SSIM calibré pour le print. Détecte ce que l&apos;œil manque : teintes décalées de 2%, texte rogné d&apos;1mm, éléments manquants.

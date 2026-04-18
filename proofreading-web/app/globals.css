@@ -28,6 +28,7 @@
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -80,6 +81,7 @@
 
   --muted: #F2F2EE;
   --muted-foreground: #6A6A66;
+  --surface-alt: #FFFFFF;
 
   /* Accent = electric violet */
   --accent: #5B4DFF;
@@ -139,6 +141,7 @@
 
   --muted: #1C1C1C;
   --muted-foreground: #8E8E88;
+  --surface-alt: #1C1C1C;
 
   --accent: #8A7EFF;
   --accent-foreground: #0A0A0A;

@@ -26,8 +26,8 @@ export const metadata: Metadata = {
   keywords: ["PDF comparison", "BAT", "print proofing", "SSIM", "document comparison", "quality control"],
   authors: [{ name: "Proofslab" }],
   icons: {
-    icon: "/favicon.ico",
-    apple: "/logo.png",
+    icon: "/logo.svg",
+    apple: "/logo-apple.png",
   },
   openGraph: {
     title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",

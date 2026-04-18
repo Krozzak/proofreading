@@ -14,7 +14,7 @@ A PDF comparison tool for validating printed materials against original designs 
 
 - **Smart Content Detection**: Automatically identifies the actual design content, ignoring margins, bleeds, and crop marks
 - **Multi-page PDF Support**: Navigate and validate each page individually
-- **Side-by-side Comparison**: View original and printer versions simultaneously
+- **Side-by-side i can Comparison**: View original and printer versions simultaneously
 - **SSIM Scoring**: Objective similarity measurement with configurable thresholds
 - **Manual Crop Adjustment**: Fine-tune detection when automatic detection is uncertain
 - **Batch Processing**: Process entire folders of PDFs with 8-character code matching
@@ -22,7 +22,7 @@ A PDF comparison tool for validating printed materials against original designs 
 
 ## Screenshots
 
-*Coming soon*
+![alt text](image.png)
 
 ## Installation
 
