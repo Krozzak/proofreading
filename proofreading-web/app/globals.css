@@ -3,11 +3,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============ SPECTRUM DESIGN SYSTEM ============ */
+/* Figma-esque · Coloré · Audacieux */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument-serif);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -37,6 +41,15 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Spectrum accent colors */
+  --color-c1: var(--c1);
+  --color-c2: var(--c2);
+  --color-c3: var(--c3);
+  --color-c4: var(--c4);
+  --color-c5: var(--c5);
+  --color-success: var(--success);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -47,79 +60,121 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  /* L'Oréal Blue #2649B2 */
-  --primary: oklch(0.45 0.15 260);
-  --primary-foreground: oklch(0.985 0 0);
-  /* L'Oréal Purple #8E7DE3 */
-  --secondary: oklch(0.65 0.15 290);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.5 0 0);
-  --accent: oklch(0.65 0.15 290);
-  --accent-foreground: oklch(0.985 0 0);
-  /* Success green */
-  --success: oklch(0.65 0.2 145);
-  --success-foreground: oklch(0.985 0 0);
-  /* Destructive/Reject red */
-  --destructive: oklch(0.55 0.22 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.92 0 0);
-  --ring: oklch(0.45 0.15 260);
-  --chart-1: oklch(0.45 0.15 260);
-  --chart-2: oklch(0.65 0.15 290);
-  --chart-3: oklch(0.65 0.2 145);
-  --chart-4: oklch(0.55 0.22 25);
-  --chart-5: oklch(0.7 0.15 60);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.45 0.15 260);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Spectrum — Light */
+  --radius: 0.875rem;
+
+  --background: #FAFAF7;
+  --foreground: #0D0D0D;
+  --card: #FFFFFF;
+  --card-foreground: #0D0D0D;
+  --popover: #FFFFFF;
+  --popover-foreground: #0D0D0D;
+
+  /* Primary = text (Spectrum uses text color as primary CTA) */
+  --primary: #0D0D0D;
+  --primary-foreground: #FAFAF7;
+
+  /* Secondary = surface with border */
+  --secondary: #F2F2EE;
+  --secondary-foreground: #0D0D0D;
+
+  --muted: #F2F2EE;
+  --muted-foreground: #6A6A66;
+
+  /* Accent = electric violet */
+  --accent: #5B4DFF;
+  --accent-foreground: #FFFFFF;
+  --accent-soft: #E6E2FF;
+
+  /* Spectrum multicolor palette */
+  --c1: #FF5B4D;  /* coral */
+  --c2: #FFC84D;  /* yellow */
+  --c3: #4DDBA8;  /* mint */
+  --c4: #5B4DFF;  /* violet */
+  --c5: #FF8FD6;  /* pink */
+
+  --success: #1F8F5F;
+  --success-foreground: #FFFFFF;
+  --destructive: #E63946;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E8E8E0;
+  --border-strong: #D0D0C4;
+  --input: #E8E8E0;
+  --ring: #5B4DFF;
+
+  --chart-1: #FF5B4D;
+  --chart-2: #FFC84D;
+  --chart-3: #4DDBA8;
+  --chart-4: #5B4DFF;
+  --chart-5: #FF8FD6;
+
+  --sidebar: #FAFAF7;
+  --sidebar-foreground: #0D0D0D;
+  --sidebar-primary: #0D0D0D;
+  --sidebar-primary-foreground: #FAFAF7;
+  --sidebar-accent: #F2F2EE;
+  --sidebar-accent-foreground: #0D0D0D;
+  --sidebar-border: #E8E8E0;
+  --sidebar-ring: #5B4DFF;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 6px rgba(0,0,0,.05), 0 12px 32px rgba(0,0,0,.08);
+  --shadow-lg: 0 4px 12px rgba(0,0,0,.08), 0 32px 64px rgba(0,0,0,.14);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0A0A0A;
+  --foreground: #FAFAF7;
+  --card: #141414;
+  --card-foreground: #FAFAF7;
+  --popover: #141414;
+  --popover-foreground: #FAFAF7;
+
+  --primary: #FAFAF7;
+  --primary-foreground: #0A0A0A;
+
+  --secondary: #1C1C1C;
+  --secondary-foreground: #FAFAF7;
+
+  --muted: #1C1C1C;
+  --muted-foreground: #8E8E88;
+
+  --accent: #8A7EFF;
+  --accent-foreground: #0A0A0A;
+  --accent-soft: #1F1B3D;
+
+  /* Dark mode Spectrum palette */
+  --c1: #FF7566;
+  --c2: #FFD166;
+  --c3: #66E5B8;
+  --c4: #8A7EFF;
+  --c5: #FFA8DF;
+
+  --success: #4DD08C;
+  --success-foreground: #0A0A0A;
+  --destructive: #FF5A67;
+  --destructive-foreground: #FAFAF7;
+
+  --border: #262626;
+  --border-strong: #383838;
+  --input: #262626;
+  --ring: #8A7EFF;
+
+  --chart-1: #FF7566;
+  --chart-2: #FFD166;
+  --chart-3: #66E5B8;
+  --chart-4: #8A7EFF;
+  --chart-5: #FFA8DF;
+
+  --sidebar: #0A0A0A;
+  --sidebar-foreground: #FAFAF7;
+  --sidebar-primary: #8A7EFF;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #1C1C1C;
+  --sidebar-accent-foreground: #FAFAF7;
+  --sidebar-border: #262626;
+  --sidebar-ring: #8A7EFF;
 }
 
 @layer base {
@@ -128,5 +183,52 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'ss01', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
+
+/* ============ SPECTRUM UTILITIES ============ */
+.font-display {
+  font-family: var(--font-display, 'Georgia', serif);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(120deg, var(--c1), var(--c2), var(--c3), var(--c4));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Animated blob decorations */
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -20px) scale(1.05); }
+  66% { transform: translate(-15px, 10px) scale(0.97); }
+}
+.blob-drift { animation: blob-drift 8s ease-in-out infinite; }
+.blob-drift-slow { animation: blob-drift 12s ease-in-out infinite reverse; }
+
+/* Scan line animation for hero demo */
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+.scan-line::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: scan 2.4s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+/* Fade-in animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease-out both; }

@@ -1,16 +1,11 @@
 'use client';
 
-/**
- * User menu component for the header.
- * Shows login button when not authenticated, dropdown menu with account options when authenticated.
- */
-
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { AuthModal } from './AuthModal';
 import { QuotaDisplay } from './QuotaDisplay';
+import { ThemeToggle } from './ThemeToggle';
 
 export function UserMenu() {
   const { user, loading, signOut } = useAuth();
@@ -18,111 +13,156 @@ export function UserMenu() {
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Loading skeleton
   if (loading) {
     return (
-      <div className="flex items-center gap-3">
-        <div className="w-24 h-8 bg-white/10 animate-pulse rounded" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <ThemeToggle />
+        <div style={{ width: 80, height: 32, background: 'var(--muted)', borderRadius: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
       </div>
     );
   }
 
-  // Not logged in
   if (!user) {
     return (
-      <div className="flex items-center gap-3">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <ThemeToggle />
         <QuotaDisplay />
-        <Button
-          variant="secondary"
-          size="sm"
+        <button
           onClick={() => setShowAuth(true)}
+          style={{
+            padding: '7px 16px', fontSize: 13, fontWeight: 500,
+            background: 'transparent', color: 'var(--muted-foreground)',
+            border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer',
+            transition: 'all .15s',
+          }}
         >
-          Connexion
-        </Button>
+          Se connecter
+        </button>
+        <button
+          onClick={() => setShowAuth(true)}
+          style={{
+            padding: '7px 16px', fontSize: 13, fontWeight: 600,
+            background: 'var(--foreground)', color: 'var(--background)',
+            border: 'none', borderRadius: 8, cursor: 'pointer',
+            transition: 'all .15s',
+          }}
+        >
+          Essayer
+        </button>
         <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
       </div>
     );
   }
 
-  // Logged in - show dropdown menu
   return (
-    <div className="flex items-center gap-4">
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <ThemeToggle />
       <QuotaDisplay />
 
-      {/* Dropdown menu */}
-      <div className="relative" ref={dropdownRef}>
-        <Button
-          variant="secondary"
-          size="sm"
+      <div style={{ position: 'relative' }} ref={dropdownRef}>
+        <button
           onClick={() => setShowDropdown(!showDropdown)}
-          className="flex items-center gap-1"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            padding: '7px 14px', fontSize: 13, fontWeight: 500,
+            background: showDropdown ? 'var(--muted)' : 'transparent',
+            color: 'var(--foreground)',
+            border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer',
+            transition: 'all .15s',
+          }}
         >
-          <span className="hidden sm:inline max-w-[120px] truncate">
+          <span style={{
+            width: 24, height: 24, borderRadius: '50%',
+            background: 'var(--c4)', color: '#fff',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 700, flexShrink: 0,
+          }}>
+            {user.email?.[0]?.toUpperCase() ?? '?'}
+          </span>
+          <span style={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {user.email?.split('@')[0]}
           </span>
-          <span className="sm:hidden">Mon compte</span>
           <svg
-            className={`w-4 h-4 transition-transform ${showDropdown ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: showDropdown ? 'rotate(180deg)' : '', transition: 'transform .15s', flexShrink: 0 }}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <path d="M6 9l6 6 6-6" />
           </svg>
-        </Button>
+        </button>
 
         {showDropdown && (
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
-            <Link
-              href="/dashboard"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              onClick={() => setShowDropdown(false)}
-            >
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-                Tableau de bord
-              </span>
-            </Link>
-            <Link
-              href="/history"
-              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              onClick={() => setShowDropdown(false)}
-            >
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Historique
-              </span>
-            </Link>
-            <div className="border-t my-1" />
+          <div style={{
+            position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+            width: 200, background: 'var(--card)',
+            border: '1px solid var(--border)', borderRadius: 14,
+            boxShadow: '0 8px 32px rgba(0,0,0,.12)',
+            padding: 6, zIndex: 100,
+          }}>
+            {[
+              {
+                href: '/dashboard', label: 'Tableau de bord',
+                icon: (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                ),
+              },
+              {
+                href: '/history', label: 'Historique',
+                icon: (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                  </svg>
+                ),
+              },
+            ].map(item => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setShowDropdown(false)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '9px 12px', fontSize: 14, color: 'var(--foreground)',
+                  borderRadius: 8, textDecoration: 'none',
+                  transition: 'background .12s',
+                }}
+                onMouseEnter={e => { (e.target as HTMLElement).closest('a')!.style.background = 'var(--muted)'; }}
+                onMouseLeave={e => { (e.target as HTMLElement).closest('a')!.style.background = 'transparent'; }}
+              >
+                <span style={{ width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+            <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
             <button
-              onClick={() => {
-                setShowDropdown(false);
-                signOut();
+              onClick={() => { setShowDropdown(false); signOut(); }}
+              style={{
+                display: 'flex', width: '100%', alignItems: 'center', gap: 10,
+                padding: '9px 12px', fontSize: 14, color: 'var(--destructive)',
+                background: 'transparent', border: 'none', borderRadius: 8,
+                cursor: 'pointer', textAlign: 'left', transition: 'background .12s',
               }}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              onMouseEnter={e => { (e.target as HTMLElement).style.background = 'color-mix(in oklab, var(--destructive) 8%, transparent)'; }}
+              onMouseLeave={e => { (e.target as HTMLElement).style.background = 'transparent'; }}
             >
-              <span className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <span style={{ width: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--destructive)' }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
-                Déconnexion
               </span>
+              Déconnexion
             </button>
           </div>
         )}

@@ -1,58 +1,55 @@
 'use client';
 
-/**
- * Displays the user's remaining quota.
- */
-
 import { useAuth } from '@/lib/auth-context';
-import { Progress } from '@/components/ui/progress';
 
 export function QuotaDisplay() {
   const { quota, user } = useAuth();
 
-  // Show nothing if not logged in
   if (!user) {
     return (
-      <div className="text-sm text-white/70">
+      <span style={{ fontSize: 13, color: 'var(--muted-foreground)' }}>
         1 comparaison gratuite/jour
-      </div>
+      </span>
     );
   }
 
-  // Loading state
   if (!quota) {
     return (
-      <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5">
-        <div className="w-16 h-2 bg-white/20 animate-pulse rounded" />
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '6px 12px', background: 'var(--muted)', borderRadius: 8,
+      }}>
+        <div style={{ width: 56, height: 6, background: 'var(--border)', borderRadius: 3, animation: 'pulse 1.5s ease-in-out infinite' }} />
       </div>
     );
   }
 
   const percentage = (quota.used / quota.limit) * 100;
-  const isLow = quota.remaining <= 1;
   const isEmpty = quota.remaining === 0;
+  const isLow = quota.remaining <= 1;
+
+  const barColor = isEmpty ? 'var(--destructive)' : isLow ? 'var(--c2)' : 'var(--c4)';
+  const textColor = isEmpty ? 'var(--destructive)' : isLow ? 'var(--c2)' : 'var(--foreground)';
 
   return (
-    <div className="flex items-center gap-3 bg-white/10 rounded-lg px-3 py-1.5">
-      <div className="text-sm">
-        <span
-          className={
-            isEmpty
-              ? 'text-red-400 font-bold'
-              : isLow
-              ? 'text-yellow-400 font-medium'
-              : 'text-white'
-          }
-        >
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '6px 12px', background: 'var(--muted)',
+      border: '1px solid var(--border)', borderRadius: 8,
+    }}>
+      <div style={{ fontSize: 13 }}>
+        <span style={{ fontWeight: 600, color: textColor, fontFamily: 'var(--font-geist-mono)' }}>
           {quota.remaining}
         </span>
-        <span className="text-white/70">/{quota.limit}</span>
-        <span className="text-white/50 ml-1 hidden sm:inline">comparaisons</span>
+        <span style={{ color: 'var(--muted-foreground)' }}>/{quota.limit}</span>
       </div>
-      <Progress
-        value={percentage}
-        className="w-16 h-2"
-      />
+      <div style={{ width: 48, height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{
+          width: `${percentage}%`, height: '100%',
+          background: barColor, borderRadius: 2,
+          transition: 'width 300ms ease',
+        }} />
+      </div>
     </div>
   );
 }

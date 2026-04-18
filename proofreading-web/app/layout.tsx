@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 
@@ -13,34 +13,41 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const instrumentSerif = Instrument_Serif({
+  variable: "--font-instrument-serif",
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+});
+
 export const metadata: Metadata = {
-  title: "ProofsLab - PDF Comparison Tool",
-  description: "Compare printed materials against original designs using AI-powered similarity analysis. The PDF comparison laboratory for print professionals.",
-  keywords: ["PDF comparison", "print proofing", "SSIM", "document comparison", "quality control"],
-  authors: [{ name: "ProofsLab" }],
+  title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+  description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel. Score SSIM, heatmap des écarts, approbation en un clic.",
+  keywords: ["PDF comparison", "BAT", "print proofing", "SSIM", "document comparison", "quality control"],
+  authors: [{ name: "Proofslab" }],
   icons: {
     icon: "/favicon.ico",
     apple: "/logo.png",
   },
   openGraph: {
-    title: "ProofsLab - PDF Comparison Tool",
-    description: "Compare printed materials against original designs using AI-powered similarity analysis.",
+    title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+    description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel. Score SSIM, heatmap, approbation batch.",
     url: "https://proofslab.com",
-    siteName: "ProofsLab",
+    siteName: "Proofslab",
     type: "website",
     images: [
       {
         url: "/logo.png",
         width: 512,
         height: 512,
-        alt: "ProofsLab Logo",
+        alt: "Proofslab Logo",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "ProofsLab - PDF Comparison Tool",
-    description: "Compare printed materials against original designs using AI-powered similarity analysis.",
+    title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+    description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel.",
     images: ["/logo.png"],
   },
 };
@@ -53,7 +60,7 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
+        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased min-h-screen bg-background`}
       >
         <AuthProvider>{children}</AuthProvider>
       </body>

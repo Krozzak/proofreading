@@ -7,11 +7,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { SpectrumLogo } from '@/components/SpectrumLogo';
+import { NavBar } from '@/components/NavBar';
 import { useAuth } from '@/lib/auth-context';
 import {
   redirectToCustomerPortal,
@@ -81,14 +81,9 @@ function DashboardContent() {
   // Loading state
   if (loading || !user) {
     return (
-      <main className="min-h-screen flex flex-col">
-        <header className="bg-primary text-white py-6 px-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="w-48 h-8 bg-white/10 animate-pulse rounded" />
-          </div>
-        </header>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTop: '3px solid var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
         </div>
       </main>
     );
@@ -109,276 +104,261 @@ function DashboardContent() {
   const planName = quota ? getPlanName(quota.limit) : 'Gratuit';
   const isPro = planName === 'Pro' || planName === 'Enterprise';
 
-  return (
-    <main className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="bg-primary text-white py-6 px-8">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-            <Image
-              src="/logo.png"
-              alt="ProofsLab Logo"
-              width={48}
-              height={48}
-              className="drop-shadow-lg"
-            />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">ProofsLab</h1>
-              <p className="text-primary-foreground/80 text-sm">Mon compte</p>
-            </div>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="secondary" size="sm">
-                Retour
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+  const quotaColor = isQuotaEmpty ? 'var(--destructive)' : isQuotaLow ? 'var(--c2)' : 'var(--c4)';
 
-      {/* Success message after upgrade */}
+  return (
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+      {/* ===== HEADER ===== */}
+      <NavBar />
+
+      {/* ===== SUCCESS BANNER ===== */}
       {upgraded && (
-        <div className="max-w-4xl mx-auto w-full px-8 pt-6">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <p className="text-green-800 font-medium">
-              Bienvenue dans le plan Pro ! Vous avez maintenant 100 comparaisons/jour.
-            </p>
-          </div>
+        <div style={{
+          background: 'color-mix(in oklab, var(--success) 10%, var(--background))',
+          borderBottom: '1px solid color-mix(in oklab, var(--success) 25%, transparent)',
+          padding: '12px 32px', textAlign: 'center',
+        }}>
+          <p style={{ color: 'var(--success)', fontWeight: 500 }}>
+            ✓ Bienvenue dans le plan Pro ! Vous avez maintenant 100 comparaisons/jour.
+          </p>
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-8 py-12">
-        <div className="grid gap-8">
-          {/* Account Info */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Informations du compte</h2>
-            <div className="grid gap-4">
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-muted-foreground">Email</span>
-                <span className="font-medium">{user.email}</span>
+      {/* ===== MAIN CONTENT ===== */}
+      <div style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+        {/* Page title */}
+        <div style={{ marginBottom: 40 }}>
+          <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 12 }}>
+            Compte
+          </div>
+          <h1 style={{
+            fontSize: 64, margin: 0, lineHeight: 1, letterSpacing: '-0.03em', fontWeight: 500,
+            fontFamily: 'var(--font-geist-sans)',
+          }}>
+            Votre{' '}
+            <span style={{ fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic', fontWeight: 400, color: 'var(--c4)' }}>
+              atelier.
+            </span>
+          </h1>
+        </div>
+
+        {/* Quota hero card */}
+        <div style={{
+          background: 'var(--c4)', color: '#fff',
+          borderRadius: 24, padding: 32, marginBottom: 20,
+          position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+            <div>
+              <div style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>Comparaisons aujourd&apos;hui</div>
+              <div style={{ fontSize: 96, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em' }}>
+                {quota?.remaining ?? '—'}
+                <span style={{ fontSize: 36, opacity: 0.5 }}> / {quota?.limit ?? '—'}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b">
-                <span className="text-muted-foreground">Plan actuel</span>
-                <span className={`font-medium ${isPro ? 'text-primary' : ''}`}>
-                  {planName}
-                  {isPro && ' ⭐'}
-                </span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-muted-foreground">Membre depuis</span>
-                <span className="font-medium">
-                  {user.metadata.creationTime
-                    ? new Date(user.metadata.creationTime).toLocaleDateString('fr-FR', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric',
-                      })
-                    : '-'}
-                </span>
+              <div style={{ fontSize: 13, opacity: 0.65, marginTop: 8 }}>
+                restantes · reset à minuit
               </div>
             </div>
-          </Card>
+            <span style={{
+              display: 'inline-block', padding: '6px 14px', fontSize: 12, fontWeight: 600,
+              background: 'var(--c2)', color: '#0a0a0a', borderRadius: 999,
+            }}>
+              Plan {planName}
+            </span>
+          </div>
+          <div style={{ height: 8, background: 'rgba(255,255,255,.15)', borderRadius: 4, overflow: 'hidden' }}>
+            <div style={{
+              width: `${quotaPercentage}%`, height: '100%',
+              background: '#fff', borderRadius: 4, transition: 'width 500ms ease',
+            }} />
+          </div>
+        </div>
 
-          {/* Quota Usage */}
-          <Card className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Utilisation quotidienne</h2>
-            {quota ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span
-                      className={`text-4xl font-bold ${
-                        isQuotaEmpty
-                          ? 'text-destructive'
-                          : isQuotaLow
-                          ? 'text-yellow-500'
-                          : 'text-primary'
-                      }`}
-                    >
-                      {quota.remaining}
-                    </span>
-                    <span className="text-2xl text-muted-foreground">
-                      /{quota.limit}
-                    </span>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      comparaisons restantes
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-muted-foreground">
-                      Réinitialisation à minuit
-                    </p>
-                    <p className="text-xs text-muted-foreground/70">
-                      {quota.resetsAt}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>Utilisé aujourd&apos;hui</span>
-                    <span>{quota.used} comparaisons</span>
-                  </div>
-                  <Progress
-                    value={quotaPercentage}
-                    className={`h-3 ${
-                      isQuotaEmpty
-                        ? '[&>div]:bg-destructive'
-                        : isQuotaLow
-                        ? '[&>div]:bg-yellow-500'
-                        : ''
-                    }`}
-                  />
-                </div>
-
-                {isQuotaEmpty && (
-                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                    <p className="text-destructive font-medium">
-                      Quota épuisé pour aujourd&apos;hui
-                    </p>
-                    <p className="text-sm text-destructive/80 mt-1">
-                      Passez au plan Pro pour 100 comparaisons/jour ou attendez demain.
-                    </p>
-                  </div>
-                )}
+        {/* Info cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+          {[
+            {
+              label: 'Email', value: user.email ?? '—',
+              icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            },
+            {
+              label: 'Membre depuis',
+              value: user.metadata.creationTime
+                ? new Date(user.metadata.creationTime).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+                : '—',
+              icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            },
+            {
+              label: 'Utilisé aujourd\'hui', value: `${quota?.used ?? 0} comparaisons`,
+              icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>,
+            },
+          ].map(stat => (
+            <div key={stat.label} style={{
+              background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, padding: 24,
+            }}>
+              <div style={{ color: 'var(--c4)', marginBottom: 14 }}>{stat.icon}</div>
+              <div style={{ fontSize: 12, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 8 }}>
+                {stat.label}
               </div>
-            ) : (
-              <div className="h-32 flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--foreground)', letterSpacing: '-0.01em' }}>
+                {stat.value}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quota empty warning */}
+        {isQuotaEmpty && (
+          <div style={{
+            background: 'color-mix(in oklab, var(--destructive) 10%, var(--background))',
+            border: '1px solid color-mix(in oklab, var(--destructive) 25%, transparent)',
+            borderRadius: 16, padding: '16px 20px', marginBottom: 20,
+          }}>
+            <p style={{ color: 'var(--destructive)', fontWeight: 500 }}>Quota épuisé pour aujourd&apos;hui</p>
+            <p style={{ fontSize: 13, color: 'var(--destructive)', opacity: 0.8, marginTop: 4 }}>
+              Passez au plan Pro pour 100 comparaisons/jour ou attendez demain.
+            </p>
+          </div>
+        )}
+
+        {/* Upgrade CTA */}
+        {!isPro && (
+          <div style={{
+            background: 'var(--foreground)', color: 'var(--background)',
+            borderRadius: 24, padding: 32, marginBottom: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap',
+          }}>
+            <div>
+              <h3 style={{ fontSize: 28, margin: '0 0 12px', letterSpacing: '-0.02em', fontWeight: 500 }}>Passez au Plan Pro</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {['100 comparaisons/jour', 'SSIM haute précision', 'Heatmap diff', 'Debrief IA (bientôt)', 'Support prioritaire'].map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, opacity: 0.85 }}>
+                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--c3)', color: '#0a0a0a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ fontSize: 72, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>
+                $4.99<span style={{ fontSize: 16, fontWeight: 400, opacity: 0.6, marginLeft: 6 }}>/ mois</span>
+              </div>
+              <p style={{ fontSize: 12, opacity: 0.5, marginTop: 6, marginBottom: 20 }}>ou $47.90/an (-20%)</p>
+              <button onClick={handleUpgrade} style={{
+                padding: '14px 32px', fontSize: 15, fontWeight: 600,
+                background: 'var(--c2)', color: '#0a0a0a',
+                border: 'none', borderRadius: 12, cursor: 'pointer',
+              }}>
+                Voir les plans →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Subscription management */}
+        {isPro && subscription && subscription.status !== 'none' && (
+          <div style={{
+            background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, padding: 28, marginBottom: 20,
+          }}>
+            <h3 style={{ fontSize: 20, margin: '0 0 20px', fontWeight: 500 }}>Gestion de l&apos;abonnement</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              {[
+                { label: 'Statut', value: getStatusLabel(subscription.status) },
+                subscription.billingPeriod && { label: 'Facturation', value: subscription.billingPeriod === 'yearly' ? 'Annuelle' : 'Mensuelle' },
+                subscription.currentPeriodEnd && {
+                  label: subscription.cancelAtPeriodEnd ? 'Accès jusqu\'au' : 'Prochain renouvellement',
+                  value: formatPeriodEnd(subscription.currentPeriodEnd),
+                },
+              ].filter(Boolean).map((row: any) => (
+                <div key={row.label} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '12px 0', borderBottom: '1px solid var(--border)', fontSize: 14,
+                }}>
+                  <span style={{ color: 'var(--muted-foreground)' }}>{row.label}</span>
+                  <span style={{ fontWeight: 500, color: 'var(--foreground)' }}>{row.value}</span>
+                </div>
+              ))}
+            </div>
+            {subscription.cancelAtPeriodEnd && (
+              <div style={{
+                marginTop: 16, padding: '12px 16px',
+                background: 'color-mix(in oklab, var(--c2) 15%, var(--background))',
+                border: '1px solid color-mix(in oklab, var(--c2) 40%, transparent)',
+                borderRadius: 10, fontSize: 13, color: 'var(--foreground)',
+              }}>
+                Votre abonnement ne sera pas renouvelé. Vous conserverez l&apos;accès Pro jusqu&apos;à la date indiquée.
               </div>
             )}
-          </Card>
+            <button
+              disabled={portalLoading}
+              onClick={handleManageSubscription}
+              style={{
+                marginTop: 20, padding: '10px 20px', fontSize: 14, fontWeight: 500,
+                background: 'transparent', color: 'var(--foreground)',
+                border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+                opacity: portalLoading ? 0.5 : 1,
+              }}
+            >
+              {portalLoading ? 'Redirection...' : 'Gérer mon abonnement →'}
+            </button>
+          </div>
+        )}
 
-          {/* Upgrade CTA (if not Pro) */}
-          {!isPro && (
-            <Card className="p-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold">Passez au Plan Pro</h2>
-                  <p className="text-muted-foreground mt-1">
-                    100 comparaisons/jour + fonctionnalités IA avancées
-                  </p>
-                  <ul className="mt-3 space-y-1 text-sm">
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      100 comparaisons par jour
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Analyse IA des différences (bientôt)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Rapports automatiques (bientôt)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-green-500">✓</span>
-                      Support prioritaire
-                    </li>
-                  </ul>
-                </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-primary">
-                    $4.99
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /mois
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    ou $47.90/an (-20%)
-                  </p>
-                  <Button
-                    className="mt-4"
-                    size="lg"
-                    onClick={handleUpgrade}
-                  >
-                    Voir les plans
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          )}
-
-          {/* Subscription Management (if Pro) */}
-          {isPro && subscription && subscription.status !== 'none' && (
-            <Card className="p-6">
-              <h2 className="text-xl font-semibold mb-4">Gestion de l&apos;abonnement</h2>
-              <div className="grid gap-4">
-                <div className="flex justify-between items-center py-2 border-b">
-                  <span className="text-muted-foreground">Statut</span>
-                  <span className={`font-medium ${getStatusColor(subscription.status)}`}>
-                    {getStatusLabel(subscription.status)}
-                  </span>
-                </div>
-                {subscription.billingPeriod && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-muted-foreground">Facturation</span>
-                    <span className="font-medium">
-                      {subscription.billingPeriod === 'yearly' ? 'Annuelle' : 'Mensuelle'}
-                    </span>
-                  </div>
-                )}
-                {subscription.currentPeriodEnd && (
-                  <div className="flex justify-between items-center py-2 border-b">
-                    <span className="text-muted-foreground">
-                      {subscription.cancelAtPeriodEnd
-                        ? 'Accès jusqu\'au'
-                        : 'Prochain renouvellement'}
-                    </span>
-                    <span className="font-medium">
-                      {formatPeriodEnd(subscription.currentPeriodEnd)}
-                    </span>
-                  </div>
-                )}
-                {subscription.cancelAtPeriodEnd && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <p className="text-yellow-800">
-                      Votre abonnement ne sera pas renouvelé. Vous conserverez l&apos;accès Pro
-                      jusqu&apos;à la date indiquée.
-                    </p>
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                className="mt-4"
-                disabled={portalLoading}
-                onClick={handleManageSubscription}
-              >
-                {portalLoading ? 'Redirection...' : 'Gérer mon abonnement'}
-              </Button>
-            </Card>
-          )}
-
-          {/* Danger zone */}
-          <Card className="p-6 border-destructive/20">
-            <h2 className="text-xl font-semibold text-destructive mb-4">
-              Zone de danger
-            </h2>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Déconnexion</p>
-                <p className="text-sm text-muted-foreground">
-                  Vous serez déconnecté de votre compte
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="border-destructive text-destructive hover:bg-destructive hover:text-white"
-                onClick={signOut}
-              >
-                Se déconnecter
-              </Button>
+        {/* Enterprise CTA — visible uniquement pour les plans Pro */}
+        {isPro && planName !== 'Enterprise' && (
+          <div style={{
+            background: 'var(--muted)', border: '1px solid var(--border)', borderRadius: 20, padding: 28, marginBottom: 20,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap',
+          }}>
+            <div>
+              <h3 style={{ fontSize: 20, margin: '0 0 6px', fontWeight: 500, letterSpacing: '-0.02em' }}>Passez à Enterprise</h3>
+              <p style={{ color: 'var(--muted-foreground)', margin: 0, fontSize: 14 }}>
+                Comparaisons illimitées, SSO, API dédiée, support 24/7.
+              </p>
             </div>
-          </Card>
+            <button
+              onClick={() => { window.location.href = 'mailto:contact@proofslab.com'; }}
+              style={{
+                padding: '10px 22px', fontSize: 14, fontWeight: 600,
+                background: 'transparent', color: 'var(--foreground)',
+                border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 8, transition: 'all .15s', whiteSpace: 'nowrap',
+              }}
+            >
+              Nous contacter
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12h14M13 5l7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        )}
+
+        {/* Sign out */}
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, padding: 24,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap',
+        }}>
+          <div>
+            <p style={{ fontWeight: 500, margin: 0 }}>Déconnexion</p>
+            <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: '4px 0 0' }}>
+              Vous serez déconnecté de votre compte
+            </p>
+          </div>
+          <button onClick={signOut} style={{
+            padding: '10px 20px', fontSize: 14, fontWeight: 500,
+            background: 'transparent', color: 'var(--destructive)',
+            border: '1px solid var(--destructive)', borderRadius: 10, cursor: 'pointer',
+          }}>
+            Se déconnecter
+          </button>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        <p>ProofsLab v1.2.0 - PDF Comparison Laboratory</p>
+      <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center', marginTop: 'auto' }}>
+        <SpectrumLogo size={20} wordmark />
       </footer>
     </main>
   );
@@ -386,15 +366,8 @@ function DashboardContent() {
 
 function DashboardLoading() {
   return (
-    <main className="min-h-screen flex flex-col">
-      <header className="bg-primary text-white py-6 px-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="w-48 h-8 bg-white/10 animate-pulse rounded" />
-        </div>
-      </header>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
+      <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTop: '3px solid var(--accent)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
     </main>
   );
 }

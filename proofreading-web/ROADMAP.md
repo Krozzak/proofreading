@@ -259,6 +259,73 @@ Le backend accepte les origines suivantes :
 
 ---
 
+### Phase 3.8: Redesign Spectrum (TERMINÉ — Session avril 2026)
+
+**Objectif**: Aligner l'interface sur le système de design Spectrum (typographie, couleurs, layout).
+
+#### Ce qui a été fait
+
+| Tâche | Status | Fichier |
+|-------|--------|---------|
+| ThemeToggle : emojis → SVG soleil/lune | ✅ Fait | `components/ThemeToggle.tsx` |
+| NavBar : retirer Compte/Historique des liens | ✅ Fait | `components/NavBar.tsx` |
+| NavBar : fond backdrop blur + bordure | ✅ Fait | `components/NavBar.tsx` |
+| UserMenu : icônes ⊞⟳↗ → SVG grid/clock/logout | ✅ Fait | `components/UserMenu.tsx` |
+| Page `/workspace` créée | ✅ Fait | `app/workspace/page.tsx` |
+| Home : retirer drop zones + CTA → `/workspace` | ✅ Fait | `app/page.tsx` |
+| Compare : FloatingBar heatmap toujours visible (grisé si inactif) | ✅ Fait | `components/ComparisonView.tsx` |
+| Compare : retirer footer keyboard hints | ✅ Fait | `app/compare/page.tsx` |
+| Compare : tooltips sur boutons sidebar | ✅ Fait | `app/compare/page.tsx` |
+| History : eyebrow Compte → Historique | ✅ Fait | `app/history/page.tsx` |
+| History : 4 stat cards (Total/Approuvés/Rejetés/Temps moyen) | ✅ Fait | `app/history/page.tsx` |
+| History : toolbar SVG search + Export CSV désactivé | ✅ Fait | `app/history/page.tsx` |
+| History : badges emoji → badges SVG stylés | ✅ Fait | `app/history/page.tsx` |
+| History : bouton "voir" (eye) désactivé | ✅ Fait | `app/history/page.tsx` |
+| Dashboard : icônes SVG sur info cards | ✅ Fait | `app/dashboard/page.tsx` |
+| Dashboard : checkmarks ✓ → SVG dans cercle | ✅ Fait | `app/dashboard/page.tsx` |
+| Dashboard : Enterprise CTA pour plan Pro | ✅ Fait | `app/dashboard/page.tsx` |
+| Pricing : titre "Choisissez votre *plan*." | ✅ Fait | `app/pricing/page.tsx` |
+| Pricing : desc sous chaque plan | ✅ Fait | `app/pricing/page.tsx` |
+| Pricing : checkmarks ✓ → SVG circles | ✅ Fait | `app/pricing/page.tsx` |
+| Pricing : fond Pro card → `var(--c4)` violet | ✅ Fait | `app/pricing/page.tsx` |
+
+#### Corrections restantes (Session 2)
+
+| Tâche | Status | Fichier |
+|-------|--------|---------|
+| Logo invisible en dark mode (mixBlendMode multiply → screen) | À faire | `components/SpectrumLogo.tsx` |
+| NavBar buttons rectangulaires → pills (borderRadius 999) | À faire | `components/NavBar.tsx` |
+| Workspace : redesign Spectrum (gradient H1, run panel 2 colonnes) | À faire | `app/workspace/page.tsx` |
+| Compare : redirect `/workspace` au lieu de `/` si no pairs | À faire | `app/compare/page.tsx` |
+| Compare : sliders FloatingBar → style custom Spectrum | À faire | `app/compare/page.tsx` |
+| History : toolbar inline avec le titre H1 | À faire | `app/history/page.tsx` |
+| Dashboard : badge "Plan Pro" couleur (vérifier --c2) | À faire | `app/dashboard/page.tsx` |
+| Dashboard : Enterprise CTA fond → `var(--muted)` | À faire | `app/dashboard/page.tsx` |
+| Pricing : prix en serif italic + toggle contrast dark mode | À faire | `app/pricing/page.tsx` |
+
+---
+
+### Fonctionnalités incomplètes (Roadmap)
+
+#### Heatmap — Bug connu (historique restauré)
+**Root cause :** `convertedImages` est vide pour les paires restaurées depuis l'historique (pas de File objects) → `canHeatmap = false`.
+
+**Fix recommandé :** Dans `compare/page.tsx`, si `showHeatmap && !currentImages && currentPair?.originalFile?.file`, déclencher `/api/convert` à la demande avant d'activer la heatmap. Les conversions ne consomment pas de quota (seul `/api/compare` est payant).
+
+#### Historique — Export CSV
+Bouton désactivé en attente d'implémentation : récupérer toutes les entrées via l'API et générer un CSV côté client.
+
+#### Historique — Voir une comparaison
+Bouton "voir" (eye) désactivé : future fonctionnalité pour recharger une session depuis l'historique dans la vue `/compare`.
+
+#### Stats homepage
+Métriques "2 400+ studios", "99.2% précision", "< 30s" sont fictives. Commentaire `TODO` dans le code. À remplacer par de vraies données ou supprimer.
+
+#### Temps moyen — Historique
+Stat card affiche "—". À calculer depuis les données réelles si disponibles dans l'API.
+
+---
+
 ### Phase 4: Fonctionnalités IA
 
 **Objectif**: Améliorer la précision avec des modèles multimodaux.

@@ -6,13 +6,12 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { useAuth } from '@/lib/auth-context';
 import { redirectToCheckout, type BillingPeriod } from '@/lib/stripe';
 import { AuthModal } from '@/components/AuthModal';
+import { SpectrumLogo } from '@/components/SpectrumLogo';
+import { NavBar } from '@/components/NavBar';
 
 const MONTHLY_PRICE = 4.99;
 const YEARLY_PRICE = 47.90;
@@ -27,31 +26,19 @@ function PricingContent() {
   const [error, setError] = useState<string | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('yearly');
 
-  // Check for canceled checkout
   const canceled = searchParams.get('canceled');
-
-  // Determine current plan based on quota
-  const currentPlan = quota
-    ? quota.limit >= 100
-      ? 'Pro'
-      : 'Gratuit'
-    : null;
+  const currentPlan = quota ? (quota.limit >= 100 ? 'Pro' : 'Gratuit') : null;
 
   const handleUpgrade = async () => {
-    if (!user) {
-      setShowAuth(true);
-      return;
-    }
-
+    if (!user) { setShowAuth(true); return; }
     setCheckoutLoading(true);
     setError(null);
-
     try {
       const token = await getIdToken();
       if (!token) throw new Error('Not authenticated');
       await redirectToCheckout(token, billingPeriod);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Veuillez réessayer.');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
       setCheckoutLoading(false);
     }
   };
@@ -59,16 +46,18 @@ function PricingContent() {
   const plans = [
     {
       name: 'Gratuit',
-      price: billingPeriod === 'monthly' ? '0' : '0',
+      accent: 'var(--c3)',
+      price: '0',
       period: '/mois',
-      description: 'Pour essayer ProofsLab',
+      tagline: 'Pour essayer Proofslab',
+      description: 'Pour essayer Proofslab',
       features: [
         '5 comparaisons par jour',
         'Comparaison SSIM standard',
         'Export CSV des résultats',
         'Support par email',
       ],
-      notIncluded: [
+      locked: [
         'Analyse IA des différences',
         'Rapports automatiques',
         'Support prioritaire',
@@ -78,6 +67,7 @@ function PricingContent() {
     },
     {
       name: 'Pro',
+      accent: 'var(--c4)',
       price: billingPeriod === 'monthly' ? MONTHLY_PRICE.toFixed(2) : (YEARLY_PRICE / 12).toFixed(2),
       period: '/mois',
       yearlyTotal: billingPeriod === 'yearly' ? `$${YEARLY_PRICE}/an` : null,
@@ -85,17 +75,19 @@ function PricingContent() {
       features: [
         '100 comparaisons par jour',
         'Comparaison SSIM haute précision',
+        'Heatmap des différences',
         'Export CSV des résultats',
         'Analyse IA des différences (bientôt)',
         'Rapports automatiques (bientôt)',
         'Support prioritaire',
       ],
-      notIncluded: [],
+      locked: [],
       cta: 'Passer au Pro',
       highlighted: true,
     },
     {
       name: 'Enterprise',
+      accent: 'var(--c5)',
       price: 'Sur devis',
       period: '',
       description: 'Pour les grandes équipes',
@@ -107,237 +99,242 @@ function PricingContent() {
         'Support dédié 24/7',
         'Formation personnalisée',
       ],
-      notIncluded: [],
+      locked: [],
       cta: 'Nous contacter',
       highlighted: false,
     },
   ];
 
-  return (
-    <main className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="bg-primary text-white py-6 px-8">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-4">
-            <Image
-              src="/logo.png"
-              alt="ProofsLab Logo"
-              width={48}
-              height={48}
-              className="drop-shadow-lg"
-            />
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">ProofsLab</h1>
-              <p className="text-primary-foreground/80 text-sm">Tarifs</p>
-            </div>
-          </Link>
-          <Link href="/">
-            <Button variant="secondary" size="sm">
-              Retour
-            </Button>
-          </Link>
-        </div>
-      </header>
+  const faq = [
+    { q: 'Puis-je annuler à tout moment ?', a: 'Oui, vous pouvez annuler votre abonnement à tout moment depuis votre tableau de bord. Vous conserverez l\'accès Pro jusqu\'à la fin de votre période de facturation.' },
+    { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Nous acceptons les cartes Visa, Mastercard et American Express via notre partenaire Stripe.' },
+    { q: 'Que se passe-t-il si j\'atteins ma limite ?', a: 'Votre quota est réinitialisé chaque jour à minuit (UTC). Si vous atteignez votre limite, vous pouvez passer au plan supérieur pour continuer immédiatement.' },
+    { q: 'L\'abonnement annuel est-il remboursable ?', a: 'Nous offrons un remboursement complet dans les 14 jours suivant votre achat si vous n\'êtes pas satisfait.' },
+  ];
 
-      {/* Main content */}
-      <div className="flex-1 max-w-6xl mx-auto w-full px-8 py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">
-            Choisissez votre plan
-          </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
-            Commencez gratuitement et passez au Pro quand vous en avez besoin.
-            Annulez à tout moment.
+  return (
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+
+      {/* ── Header ── */}
+      <NavBar />
+
+      {/* ── Main ── */}
+      <div style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+
+        {/* Title */}
+        <div style={{ marginBottom: 48, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 12 }}>
+            Tarifs
+          </div>
+          <h1 style={{ fontSize: 64, margin: '0 0 16px', lineHeight: 1, letterSpacing: '-0.03em', fontWeight: 500 }}>
+            Choisissez votre{' '}
+            <em style={{ fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic', fontWeight: 400, color: 'var(--c4)' }}>
+              plan
+            </em>
+            .
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--muted-foreground)', maxWidth: 480, margin: '0 auto 28px' }}>
+            Commencez gratuitement, passez au Pro quand vous en avez besoin. Annulez à tout moment.
           </p>
 
           {/* Billing toggle */}
-          <div className="inline-flex items-center gap-4 bg-muted rounded-full p-1">
-            <button
-              onClick={() => setBillingPeriod('monthly')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                billingPeriod === 'monthly'
-                  ? 'bg-background shadow-sm'
-                  : 'hover:bg-background/50'
-              }`}
-            >
-              Mensuel
-            </button>
-            <button
-              onClick={() => setBillingPeriod('yearly')}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
-                billingPeriod === 'yearly'
-                  ? 'bg-background shadow-sm'
-                  : 'hover:bg-background/50'
-              }`}
-            >
-              Annuel
-              <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">
-                -20%
-              </span>
-            </button>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 4,
+            background: 'var(--muted)', borderRadius: 999, padding: 4,
+            border: '1px solid var(--border)',
+          }}>
+            {(['monthly', 'yearly'] as BillingPeriod[]).map(period => (
+              <button
+                key={period}
+                onClick={() => setBillingPeriod(period)}
+                style={{
+                  padding: '7px 18px', fontSize: 13, fontWeight: 600,
+                  background: billingPeriod === period ? 'var(--foreground)' : 'transparent',
+                  color: billingPeriod === period ? 'var(--background)' : 'var(--muted-foreground)',
+                  border: 'none', borderRadius: 999, cursor: 'pointer',
+                  boxShadow: billingPeriod === period ? '0 1px 4px rgba(0,0,0,.15)' : 'none',
+                  transition: 'all .15s',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                }}
+              >
+                {period === 'monthly' ? 'Mensuel' : 'Annuel'}
+                {period === 'yearly' && (
+                  <span style={{
+                    background: 'var(--c3)', color: '#0a0a0a',
+                    fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999,
+                  }}>
+                    −20%
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
+        {/* Canceled banner */}
         {canceled && (
-          <div className="max-w-md mx-auto mb-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <p className="text-yellow-800">
-              Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.
-            </p>
+          <div style={{
+            maxWidth: 480, margin: '0 auto 32px',
+            background: 'color-mix(in oklab, var(--c2) 15%, var(--background))',
+            border: '1px solid color-mix(in oklab, var(--c2) 40%, transparent)',
+            borderRadius: 14, padding: '14px 20px', textAlign: 'center', fontSize: 14,
+          }}>
+            Paiement annulé. Vous pouvez réessayer quand vous le souhaitez.
           </div>
         )}
 
+        {/* Error banner */}
         {error && (
-          <div className="max-w-md mx-auto mb-8 bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <p className="text-red-800">{error}</p>
+          <div style={{
+            maxWidth: 480, margin: '0 auto 32px',
+            background: 'color-mix(in oklab, var(--destructive) 10%, var(--background))',
+            border: '1px solid color-mix(in oklab, var(--destructive) 25%, transparent)',
+            borderRadius: 14, padding: '14px 20px', textAlign: 'center', fontSize: 14, color: 'var(--destructive)',
+          }}>
+            {error}
           </div>
         )}
 
         {/* Plans grid */}
-        <div className="grid md:grid-cols-3 gap-8">
-          {plans.map((plan) => (
-            <Card
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 80 }}>
+          {plans.map(plan => (
+            <div
               key={plan.name}
-              className={`p-6 flex flex-col ${
-                plan.highlighted
-                  ? 'border-primary border-2 relative'
-                  : ''
-              }`}
+              style={{
+                background: plan.highlighted ? 'var(--c4)' : 'var(--card)',
+                color: plan.highlighted ? '#fff' : 'var(--foreground)',
+                border: plan.highlighted ? 'none' : '1px solid var(--border)',
+                borderRadius: 24, padding: 28,
+                display: 'flex', flexDirection: 'column',
+                position: 'relative',
+                transform: plan.highlighted ? 'translateY(-8px)' : 'none',
+                boxShadow: plan.highlighted ? '0 24px 48px rgba(91,77,255,.25)' : 'none',
+              }}
             >
               {plan.highlighted && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full">
-                  POPULAIRE
+                <div style={{
+                  position: 'absolute', top: -12, left: 28,
+                  background: 'var(--c2)', color: '#0a0a0a',
+                  fontSize: 10, fontWeight: 800, letterSpacing: '0.08em', padding: '4px 14px', borderRadius: 999,
+                }}>
+                  ✦ Populaire
                 </div>
               )}
 
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold mb-2">{plan.name}</h3>
-                <div className="flex items-baseline justify-center gap-1">
-                  {plan.name !== 'Enterprise' && <span className="text-lg">$</span>}
-                  <span className="text-4xl font-bold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
+              {/* Plan name + tagline */}
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>{plan.description}</div>
+                <h3 style={{ fontSize: 28, fontWeight: 500, margin: 0, letterSpacing: '-0.02em' }}>{plan.name}</h3>
+              </div>
+
+              {/* Price */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                  {plan.name !== 'Enterprise' && <span style={{ fontSize: 20, fontWeight: 500, opacity: 0.6 }}>$</span>}
+                  <span style={{
+                    fontSize: 56, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.04em',
+                    fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic',
+                  }}>
+                    {plan.price}
+                  </span>
+                  {plan.period && <span style={{ fontSize: 14, opacity: 0.5, marginLeft: 4 }}>{plan.period}</span>}
                 </div>
                 {plan.yearlyTotal && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Facturé {plan.yearlyTotal}
-                    <span className="text-green-600 ml-1">
+                  <p style={{ fontSize: 12, opacity: 0.55, margin: '6px 0 0' }}>
+                    Facturé {plan.yearlyTotal}{' '}
+                    <span style={{ color: plan.highlighted ? 'var(--c2)' : 'var(--c3)' }}>
                       (économisez ${YEARLY_SAVINGS})
                     </span>
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground mt-2">
-                  {plan.description}
-                </p>
               </div>
 
-              <ul className="space-y-3 mb-6 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✓</span>
-                    <span className="text-sm">{feature}</span>
+              {/* Features */}
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+                {plan.features.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14 }}>
+                    <span style={{
+                      width: 16, height: 16, borderRadius: '50%',
+                      background: plan.highlighted ? 'rgba(255,255,255,.2)' : plan.accent + '44',
+                      color: plan.highlighted ? '#fff' : plan.accent,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0, marginTop: 1,
+                    }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M20 6L9 17l-5-5"/>
+                      </svg>
+                    </span>
+                    {f}
                   </li>
                 ))}
-                {plan.notIncluded.map((feature) => (
-                  <li
-                    key={feature}
-                    className="flex items-start gap-2 text-muted-foreground"
-                  >
-                    <span className="mt-0.5">✗</span>
-                    <span className="text-sm">{feature}</span>
+                {plan.locked.map(f => (
+                  <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 14, opacity: 0.35 }}>
+                    <span style={{ width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </span>
+                    {f}
                   </li>
                 ))}
               </ul>
 
+              {/* CTA */}
               {plan.name === 'Gratuit' && (
-                <Button
-                  variant={currentPlan === 'Gratuit' ? 'outline' : 'secondary'}
-                  className="w-full"
+                <button
                   disabled={currentPlan === 'Gratuit'}
                   onClick={() => (user ? router.push('/') : setShowAuth(true))}
+                  style={ctaBtnStyle(false, currentPlan === 'Gratuit')}
                 >
                   {currentPlan === 'Gratuit' ? 'Plan actuel' : plan.cta}
-                </Button>
+                </button>
               )}
-
               {plan.name === 'Pro' && (
-                <Button
-                  className="w-full"
+                <button
                   disabled={currentPlan === 'Pro' || checkoutLoading}
                   onClick={handleUpgrade}
+                  style={ctaBtnStyle(true, currentPlan === 'Pro' || checkoutLoading)}
                 >
-                  {checkoutLoading
-                    ? 'Redirection...'
-                    : currentPlan === 'Pro'
-                    ? 'Plan actuel'
-                    : plan.cta}
-                </Button>
+                  {checkoutLoading ? 'Redirection…' : currentPlan === 'Pro' ? 'Plan actuel' : plan.cta}
+                </button>
               )}
-
               {plan.name === 'Enterprise' && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() =>
-                    (window.location.href = 'mailto:contact@proofslab.com')
-                  }
+                <button
+                  onClick={() => { window.location.href = 'mailto:contact@proofslab.com'; }}
+                  style={ctaBtnStyle(false, false)}
                 >
                   {plan.cta}
-                </Button>
+                </button>
               )}
-            </Card>
+            </div>
           ))}
         </div>
 
-        {/* FAQ section */}
-        <div className="mt-16 max-w-2xl mx-auto">
-          <h3 className="text-2xl font-bold text-center mb-8">
-            Questions fréquentes
-          </h3>
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-semibold mb-2">
-                Puis-je annuler à tout moment ?
-              </h4>
-              <p className="text-muted-foreground">
-                Oui, vous pouvez annuler votre abonnement à tout moment depuis
-                votre tableau de bord. Vous conserverez l&apos;accès Pro jusqu&apos;à la
-                fin de votre période de facturation.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">
-                Quels moyens de paiement acceptez-vous ?
-              </h4>
-              <p className="text-muted-foreground">
-                Nous acceptons les cartes Visa, Mastercard et American Express
-                via notre partenaire Stripe.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">
-                Que se passe-t-il si j&apos;atteins ma limite ?
-              </h4>
-              <p className="text-muted-foreground">
-                Votre quota est réinitialisé chaque jour à minuit (UTC). Si vous
-                atteignez votre limite, vous pouvez passer au plan supérieur
-                pour continuer immédiatement.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">
-                L&apos;abonnement annuel est-il remboursable ?
-              </h4>
-              <p className="text-muted-foreground">
-                Nous offrons un remboursement complet dans les 14 jours suivant
-                votre achat si vous n&apos;êtes pas satisfait.
-              </p>
-            </div>
+        {/* FAQ */}
+        <div style={{ maxWidth: 640, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 36, fontWeight: 500, textAlign: 'center', marginBottom: 40, letterSpacing: '-0.02em' }}>
+            Questions{' '}
+            <span style={{ fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic', fontWeight: 400, color: 'var(--c4)' }}>
+              fréquentes.
+            </span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {faq.map((item, i) => (
+              <div key={item.q} style={{
+                padding: '20px 0',
+                borderBottom: i < faq.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <h4 style={{ fontWeight: 600, margin: '0 0 8px', fontSize: 15 }}>{item.q}</h4>
+                <p style={{ color: 'var(--muted-foreground)', margin: 0, fontSize: 14, lineHeight: 1.6 }}>{item.a}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        <p>ProofsLab v1.2.0 - PDF Comparison Laboratory</p>
+      <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center' }}>
+        <SpectrumLogo size={20} wordmark />
       </footer>
 
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
@@ -345,16 +342,22 @@ function PricingContent() {
   );
 }
 
+function ctaBtnStyle(highlighted: boolean, disabled: boolean): React.CSSProperties {
+  return {
+    width: '100%', padding: '13px 20px', fontSize: 14, fontWeight: 600,
+    background: disabled ? 'rgba(255,255,255,.1)' : highlighted ? 'var(--c2)' : 'transparent',
+    color: disabled ? 'rgba(255,255,255,.4)' : highlighted ? '#0a0a0a' : 'var(--foreground)',
+    border: highlighted ? 'none' : '1px solid var(--border)',
+    borderRadius: 12, cursor: disabled ? 'not-allowed' : 'pointer',
+    transition: 'opacity .15s', opacity: disabled ? 0.6 : 1,
+  };
+}
+
 function PricingLoading() {
   return (
-    <main className="min-h-screen flex flex-col bg-background">
-      <header className="bg-primary text-white py-6 px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="w-48 h-8 bg-white/10 animate-pulse rounded" />
-        </div>
-      </header>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '3px solid var(--border)', borderTop: '3px solid var(--c4)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     </main>
   );
