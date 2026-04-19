@@ -16,3 +16,6 @@ firebase-admin==6.5.0
 
 # Stripe payments
 stripe==10.0.0
+
+# Anthropic Claude SDK (AI analysis feature)
+anthropic==0.40.0

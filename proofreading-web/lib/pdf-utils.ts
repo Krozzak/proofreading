@@ -143,6 +143,90 @@ export async function compareImages(
   }
 }
 
+// ─── AI Analysis ─────────────────────────────────────────────────────────────
+
+export interface AIZone {
+  x_pct: number;
+  y_pct: number;
+  w_pct: number;
+  h_pct: number;
+}
+
+export interface AIIssue {
+  zone: AIZone;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  false_positive: boolean;
+  description: string;
+}
+
+export interface AIQuotaInfo {
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsAt: string;
+}
+
+export interface AIAnalyzeResult {
+  issues: AIIssue[];
+  summary: string;
+  false_positive_count: number;
+  model_used: string;
+  ai_quota: AIQuotaInfo | null;
+}
+
+/**
+ * Call the AI analysis endpoint to compare two images using Claude vision.
+ * Requires authentication. Only available for Free (10 lifetime) and Pro (100/month) tiers.
+ */
+export async function analyzeWithAI(
+  image1Base64: string,
+  image2Base64: string,
+  token: string
+): Promise<AIAnalyzeResult | null> {
+  try {
+    const clean1 = image1Base64.includes(',') ? image1Base64.split(',')[1] : image1Base64;
+    const clean2 = image2Base64.includes(',') ? image2Base64.split(',')[1] : image2Base64;
+
+    const response = await fetch(`${API_URL}/api/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ image1: clean1, image2: clean2 }),
+    });
+
+    if (response.status === 429) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Quota IA épuisé');
+    }
+    if (response.status === 403) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Compte requis pour l\'analyse IA');
+    }
+    if (!response.ok) {
+      console.error('AI analysis failed:', response.statusText);
+      return null;
+    }
+
+    const data = await response.json();
+    if (data.success) {
+      return {
+        issues: data.issues ?? [],
+        summary: data.summary ?? '',
+        false_positive_count: data.false_positive_count ?? 0,
+        model_used: data.model_used ?? '',
+        ai_quota: data.ai_quota ?? null,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error calling AI analyze:', error);
+    throw error;
+  }
+}
+
 /**
  * Export results to CSV format
  */

@@ -27,7 +27,9 @@ function PricingContent() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('yearly');
 
   const canceled = searchParams.get('canceled');
-  const currentPlan = quota ? (quota.limit >= 100 ? 'Pro' : 'Gratuit') : null;
+  const currentPlan = quota
+    ? (quota.limit >= 999999 ? 'Enterprise' : quota.limit >= 100 ? 'Pro' : 'Gratuit')
+    : null;
 
   const handleUpgrade = async () => {
     if (!user) { setShowAuth(true); return; }

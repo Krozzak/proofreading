@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ComparisonPair } from '@/lib/types';
+import type { AIAnalyzeResult } from '@/lib/pdf-utils';
 
 // ─── SVG Icons (no emojis) ───────────────────────────────────────────────────
 function Icon({ name, size = 16, color = 'currentColor' }: { name: string; size?: number; color?: string }) {
@@ -21,12 +22,23 @@ function Icon({ name, size = 16, color = 'currentColor' }: { name: string; size?
   }
 }
 
-// ─── Heatmap ─────────────────────────────────────────────────────────────────
-// The heatmap needs actual raster images — we receive base64 image URLs from
-// the parent (already converted by convertPdfToImage). PDF blob URLs cannot
-// be loaded as <img> elements, so we accept optional image URLs separately.
-// HeatmapCanvas — draws base image + diff overlay on a single canvas so
-// everything is pixel-perfect aligned. No separate <img> needed.
+// ─── Heatmap v2 ──────────────────────────────────────────────────────────────
+// Instead of coloring every different pixel red (which turns the whole image
+// red on slight shifts), we cluster diff pixels into bounding boxes and draw
+// labeled red rectangles. Border pixels (5% margin) are ignored to avoid
+// false positives from crop marks / bleeds.
+//
+// Algorithm:
+//  1. Pixel diff → mark cells in a 16×16 grid as "error" if avg diff > 30
+//  2. Flood-fill adjacent error cells into clusters
+//  3. Compute bounding box per cluster, merge boxes closer than 20px
+//  4. Draw printer image + red semi-transparent rects + numbered labels
+
+const CELL_SIZE = 16;
+const DIFF_THRESHOLD = 30;   // avg RGB diff to flag a pixel
+const MERGE_GAP = 20;        // px — merge bboxes closer than this
+const BORDER_RATIO = 0.05;   // ignore outer 5% as potential crop marks
+
 function HeatmapCanvas({
   image1Url,
   image2Url,
@@ -48,7 +60,6 @@ function HeatmapCanvas({
         const [img1, img2] = await Promise.all([loadImg(image1Url), loadImg(image2Url)]);
         if (cancelled || !canvasRef.current) return;
 
-        // Use the natural dimensions of img2 (printer) as canvas size
         const W = img2.naturalWidth || img2.width;
         const H = img2.naturalHeight || img2.height;
 
@@ -57,40 +68,138 @@ function HeatmapCanvas({
         canvas.height = H;
         const ctx = canvas.getContext('2d')!;
 
-        // Step 1: draw printer image as base
+        // Get pixel data for both images at printer dimensions
         ctx.drawImage(img2, 0, 0, W, H);
-        const d2 = ctx.getImageData(0, 0, W, H);
+        const d2 = ctx.getImageData(0, 0, W, H).data;
 
-        // Step 2: get orig image pixels at same size
         const off = document.createElement('canvas');
         off.width = W; off.height = H;
         const offCtx = off.getContext('2d')!;
         offCtx.drawImage(img1, 0, 0, W, H);
-        const d1 = offCtx.getImageData(0, 0, W, H);
+        const d1 = offCtx.getImageData(0, 0, W, H).data;
 
-        // Step 3: build diff overlay
-        const overlay = ctx.createImageData(W, H);
-        for (let i = 0; i < d1.data.length; i += 4) {
-          const diff = (
-            Math.abs(d1.data[i]   - d2.data[i])   +
-            Math.abs(d1.data[i+1] - d2.data[i+1]) +
-            Math.abs(d1.data[i+2] - d2.data[i+2])
-          ) / 3;
-          overlay.data[i]   = 255;
-          overlay.data[i+1] = Math.max(0, 60 - diff * 1.5);
-          overlay.data[i+2] = 0;
-          overlay.data[i+3] = Math.min(255, diff * 4);
+        // Border exclusion zone (5% of each edge)
+        const bLeft   = Math.round(W * BORDER_RATIO);
+        const bRight  = Math.round(W * (1 - BORDER_RATIO));
+        const bTop    = Math.round(H * BORDER_RATIO);
+        const bBottom = Math.round(H * (1 - BORDER_RATIO));
+
+        // Build grid of error cells
+        const cols = Math.ceil(W / CELL_SIZE);
+        const rows = Math.ceil(H / CELL_SIZE);
+        const grid = new Uint8Array(cols * rows); // 1 = error cell
+
+        for (let y = 0; y < H; y++) {
+          for (let x = 0; x < W; x++) {
+            if (x < bLeft || x >= bRight || y < bTop || y >= bBottom) continue;
+            const i = (y * W + x) * 4;
+            const diff = (
+              Math.abs(d1[i]   - d2[i])   +
+              Math.abs(d1[i+1] - d2[i+1]) +
+              Math.abs(d1[i+2] - d2[i+2])
+            ) / 3;
+            if (diff > DIFF_THRESHOLD) {
+              const cx = Math.floor(x / CELL_SIZE);
+              const cy = Math.floor(y / CELL_SIZE);
+              grid[cy * cols + cx] = 1;
+            }
+          }
         }
 
-        // Step 4: composite — printer image first, then diff overlay
-        ctx.drawImage(img2, 0, 0, W, H);
-        const tmpCanvas = document.createElement('canvas');
-        tmpCanvas.width = W; tmpCanvas.height = H;
-        tmpCanvas.getContext('2d')!.putImageData(overlay, 0, 0);
-        ctx.globalAlpha = opacity;
-        ctx.drawImage(tmpCanvas, 0, 0);
-        ctx.globalAlpha = 1;
+        // Flood-fill to find clusters, compute bounding boxes
+        const visited = new Uint8Array(cols * rows);
+        type BBox = { x1: number; y1: number; x2: number; y2: number };
+        const bboxes: BBox[] = [];
 
+        for (let cy = 0; cy < rows; cy++) {
+          for (let cx = 0; cx < cols; cx++) {
+            if (!grid[cy * cols + cx] || visited[cy * cols + cx]) continue;
+            // BFS flood fill
+            const stack = [[cx, cy]];
+            let minCx = cx, maxCx = cx, minCy = cy, maxCy = cy;
+            while (stack.length) {
+              const [x, y] = stack.pop()!;
+              if (x < 0 || x >= cols || y < 0 || y >= rows) continue;
+              if (visited[y * cols + x] || !grid[y * cols + x]) continue;
+              visited[y * cols + x] = 1;
+              if (x < minCx) minCx = x;
+              if (x > maxCx) maxCx = x;
+              if (y < minCy) minCy = y;
+              if (y > maxCy) maxCy = y;
+              stack.push([x+1,y],[x-1,y],[x,y+1],[x,y-1]);
+            }
+            bboxes.push({
+              x1: minCx * CELL_SIZE,
+              y1: minCy * CELL_SIZE,
+              x2: (maxCx + 1) * CELL_SIZE,
+              y2: (maxCy + 1) * CELL_SIZE,
+            });
+          }
+        }
+
+        // Merge overlapping / nearby bboxes
+        const merged: BBox[] = [];
+        const used = new Uint8Array(bboxes.length);
+        for (let i = 0; i < bboxes.length; i++) {
+          if (used[i]) continue;
+          let b = { ...bboxes[i] };
+          let didMerge = true;
+          while (didMerge) {
+            didMerge = false;
+            for (let j = i + 1; j < bboxes.length; j++) {
+              if (used[j]) continue;
+              const o = bboxes[j];
+              const overlap =
+                o.x1 - MERGE_GAP <= b.x2 && o.x2 + MERGE_GAP >= b.x1 &&
+                o.y1 - MERGE_GAP <= b.y2 && o.y2 + MERGE_GAP >= b.y1;
+              if (overlap) {
+                b = {
+                  x1: Math.min(b.x1, o.x1), y1: Math.min(b.y1, o.y1),
+                  x2: Math.max(b.x2, o.x2), y2: Math.max(b.y2, o.y2),
+                };
+                used[j] = 1;
+                didMerge = true;
+              }
+            }
+          }
+          merged.push(b);
+        }
+
+        // Draw: printer image base + error rectangles
+        ctx.drawImage(img2, 0, 0, W, H);
+
+        merged.forEach((b, idx) => {
+          const bw = b.x2 - b.x1;
+          const bh = b.y2 - b.y1;
+
+          // Semi-transparent fill
+          ctx.globalAlpha = opacity * 0.25;
+          ctx.fillStyle = '#ff2020';
+          ctx.fillRect(b.x1, b.y1, bw, bh);
+
+          // Solid border
+          ctx.globalAlpha = opacity;
+          ctx.strokeStyle = '#ff2020';
+          ctx.lineWidth = Math.max(2, Math.round(W / 400));
+          ctx.strokeRect(b.x1, b.y1, bw, bh);
+
+          // Zone number badge
+          const badgeSize = Math.max(18, Math.round(W / 40));
+          const fontSize  = Math.max(10, Math.round(badgeSize * 0.55));
+          ctx.globalAlpha = opacity;
+          ctx.fillStyle = '#ff2020';
+          ctx.beginPath();
+          ctx.arc(b.x1 + badgeSize / 2, b.y1 + badgeSize / 2, badgeSize / 2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(idx + 1), b.x1 + badgeSize / 2, b.y1 + badgeSize / 2);
+        });
+
+        ctx.globalAlpha = 1;
         setReady(true);
       } catch (e) {
         console.error('[Heatmap] failed to draw:', e);
@@ -229,6 +338,11 @@ interface ComparisonViewProps {
   hasNextPair: boolean;
   onCalculateSimilarity: () => void;
   isCalculating: boolean;
+  // AI Analysis
+  onAnalyzeWithAI?: () => void;
+  isAnalyzing?: boolean;
+  aiResult?: AIAnalyzeResult | null;
+  canUseAI?: boolean;  // true if user is logged in (free or pro)
 }
 
 // ─── Main ────────────────────────────────────────────────────────────────────
@@ -241,11 +355,13 @@ export function ComparisonView({
   onPrevPage, onNextPage, onPrevPair, onNextPair,
   hasPrevPair, hasNextPair,
   onCalculateSimilarity, isCalculating,
+  onAnalyzeWithAI, isAnalyzing, aiResult, canUseAI,
 }: ComparisonViewProps) {
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [heatmapOpacity, setHeatmapOpacity] = useState(0.65);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
+  const [showAIPanel, setShowAIPanel] = useState(false);
 
   const maxPages = Math.max(pair.totalPagesOriginal, pair.totalPagesPrinter);
   const ok = pair.similarity !== null && pair.similarity >= threshold;
@@ -420,6 +536,89 @@ export function ComparisonView({
         </div>
       )}
 
+      {/* ── AI Results panel ── */}
+      {showAIPanel && aiResult && (
+        <div style={{
+          background: 'var(--card)', border: '1px solid var(--border)',
+          borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Icon name="bolt" size={16} color="var(--c4)" />
+              <span style={{ fontWeight: 600, fontSize: 14 }}>Analyse IA</span>
+              <span style={{
+                fontSize: 11, padding: '2px 8px', borderRadius: 999,
+                background: 'var(--muted)', color: 'var(--muted-foreground)',
+              }}>
+                {aiResult.model_used.includes('haiku') ? 'Haiku' : aiResult.model_used}
+              </span>
+            </div>
+            <button onClick={() => setShowAIPanel(false)} style={ghostBtn(false)}>
+              <Icon name="x" size={12} /> Fermer
+            </button>
+          </div>
+
+          {/* Summary */}
+          <p style={{
+            margin: 0, fontSize: 13, color: 'var(--foreground)',
+            padding: '10px 14px', background: 'var(--muted)', borderRadius: 10,
+          }}>
+            {aiResult.summary}
+          </p>
+
+          {/* Issues list */}
+          {aiResult.issues.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--muted-foreground)' }}>
+              Aucune anomalie détectée.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {aiResult.issues.map((issue, i) => {
+                const severityColor = issue.severity === 'critical' ? 'var(--c1)'
+                  : issue.severity === 'high' ? '#f97316'
+                  : issue.severity === 'medium' ? 'var(--c2)'
+                  : 'var(--muted-foreground)';
+                return (
+                  <div key={i} style={{
+                    padding: '10px 14px', borderRadius: 10,
+                    border: `1px solid ${issue.false_positive ? 'var(--border)' : severityColor}44`,
+                    background: issue.false_positive ? 'var(--muted)' : `color-mix(in oklab, ${severityColor} 8%, var(--background))`,
+                    opacity: issue.false_positive ? 0.6 : 1,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999,
+                        background: severityColor, color: '#fff',
+                        textTransform: 'uppercase', letterSpacing: '0.06em',
+                      }}>
+                        {issue.severity}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--muted-foreground)', fontFamily: 'var(--font-geist-mono)' }}>
+                        {issue.type.replace(/_/g, ' ')}
+                      </span>
+                      {issue.false_positive && (
+                        <span style={{ fontSize: 11, color: 'var(--muted-foreground)', marginLeft: 'auto' }}>
+                          faux positif
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 13 }}>{issue.description}</p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* AI quota remaining */}
+          {aiResult.ai_quota && (
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--muted-foreground)', textAlign: 'right' }}>
+              {aiResult.ai_quota.remaining} analyse{aiResult.ai_quota.remaining !== 1 ? 's' : ''} IA restante{aiResult.ai_quota.remaining !== 1 ? 's' : ''}
+              {aiResult.ai_quota.resetsAt !== 'never' ? ` · reset ${new Date(aiResult.ai_quota.resetsAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}` : ' (à vie)'}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Floating action bar (fixed bottom) ── */}
       <FloatingBar
         pair={pair}
@@ -439,6 +638,13 @@ export function ComparisonView({
         onNextPair={onNextPair}
         onReject={() => setShowRejectDialog(true)}
         onApprove={onApprove}
+        canUseAI={canUseAI}
+        canHeatmapForAI={canHeatmap}
+        isAnalyzing={isAnalyzing}
+        onAnalyzeWithAI={onAnalyzeWithAI ? () => { onAnalyzeWithAI(); setShowAIPanel(true); } : undefined}
+        hasAIResult={!!aiResult}
+        onShowAIPanel={() => setShowAIPanel(v => !v)}
+        showAIPanel={showAIPanel}
       />
     </div>
   );
@@ -452,6 +658,8 @@ function FloatingBar({
   onThresholdChange, onAutoCalculateChange,
   onShowHeatmapChange, onHeatmapOpacityChange,
   onPrevPair, onNextPair, onReject, onApprove,
+  canUseAI, canHeatmapForAI, isAnalyzing, onAnalyzeWithAI,
+  hasAIResult, onShowAIPanel, showAIPanel,
 }: {
   pair: ComparisonPair;
   threshold: number;
@@ -470,6 +678,13 @@ function FloatingBar({
   onNextPair: () => void;
   onReject: () => void;
   onApprove: () => void;
+  canUseAI?: boolean;
+  canHeatmapForAI?: boolean;
+  isAnalyzing?: boolean;
+  onAnalyzeWithAI?: () => void;
+  hasAIResult?: boolean;
+  onShowAIPanel?: () => void;
+  showAIPanel?: boolean;
 }) {
   return (
     <div style={{
@@ -592,6 +807,39 @@ function FloatingBar({
       </label>
 
       <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
+
+      {/* AI Analysis button */}
+      {canUseAI !== false && (
+        <>
+          <button
+            onClick={onAnalyzeWithAI ?? onShowAIPanel}
+            disabled={!canHeatmapForAI || isAnalyzing}
+            title={!canHeatmapForAI ? 'Calculez la similarité d\'abord' : 'Analyser avec l\'IA'}
+            style={{
+              padding: '9px 14px', fontSize: 13, fontWeight: 600,
+              background: hasAIResult && showAIPanel ? 'var(--c4)' : 'var(--muted)',
+              color: hasAIResult && showAIPanel ? '#fff' : (!canHeatmapForAI ? 'var(--muted-foreground)' : 'var(--foreground)'),
+              border: '1px solid var(--border)', borderRadius: 10,
+              cursor: !canHeatmapForAI || isAnalyzing ? 'not-allowed' : 'pointer',
+              opacity: !canHeatmapForAI ? 0.4 : 1,
+              display: 'flex', alignItems: 'center', gap: 7, transition: 'all .15s',
+            }}
+          >
+            {isAnalyzing ? (
+              <>
+                <div style={{ width: 12, height: 12, border: '2px solid currentColor', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                Analyse…
+              </>
+            ) : (
+              <>
+                <Icon name="bolt" size={13} />
+                {hasAIResult ? 'Résultats IA' : 'Analyse IA'}
+              </>
+            )}
+          </button>
+          <div style={{ width: 1, height: 28, background: 'var(--border)' }} />
+        </>
+      )}
 
       {/* Approve / Reject */}
       <button

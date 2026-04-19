@@ -13,10 +13,12 @@ import {
   fileToBase64,
   convertPdfToImage,
   compareImages,
+  analyzeWithAI,
   exportToCSV,
   downloadFile,
   copyToClipboard,
 } from '@/lib/pdf-utils';
+import type { AIAnalyzeResult } from '@/lib/pdf-utils';
 import type { ComparisonPair } from '@/lib/types';
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -195,6 +197,9 @@ export default function ComparePage() {
   const [showPricingModal, setShowPricingModal] = useState(false);
   // Store converted images for heatmap (keyed by pair index + page)
   const [convertedImages, setConvertedImages] = useState<Record<string, { orig: string; print: string }>>({});
+  // AI analysis state (keyed by pair index)
+  const [aiResults, setAiResults] = useState<Record<number, AIAnalyzeResult>>({});
+  const [isAiAnalyzing, setIsAiAnalyzing] = useState(false);;
 
   useEffect(() => {
     if (pairs.length > 0) {
@@ -268,6 +273,27 @@ export default function ComparePage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoCalculate, currentIndex, currentPair?.similarity]);
+
+  const handleAnalyzeWithAI = useCallback(async () => {
+    if (!currentImages?.orig || !currentImages?.print) return;
+    setIsAiAnalyzing(true);
+    setQuotaError(null);
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Non authentifié');
+      const result = await analyzeWithAI(currentImages.orig, currentImages.print, token);
+      if (result) {
+        setAiResults(prev => ({ ...prev, [currentIndex]: result }));
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '';
+      if (msg.includes('quota') || msg.includes('Quota') || msg.includes('10 analyses') || msg.includes('100 analyses')) {
+        setQuotaError(msg);
+      }
+    } finally {
+      setIsAiAnalyzing(false);
+    }
+  }, [currentImages, currentIndex, getIdToken]);
 
   const handleCalculateAll = async () => {
     const toCalc = pairs.map((p, i) => ({ p, i })).filter(({ p }) => p.originalFile?.file && p.printerFile?.file && p.similarity === null);
@@ -476,6 +502,10 @@ export default function ComparePage() {
               hasNextPair={currentIndex < pairs.length - 1}
               onCalculateSimilarity={handleCalculateSimilarity}
               isCalculating={isCalculating}
+              onAnalyzeWithAI={handleAnalyzeWithAI}
+              isAnalyzing={isAiAnalyzing}
+              aiResult={aiResults[currentIndex] ?? null}
+              canUseAI={!!user}
             />
           )}
         </div>
