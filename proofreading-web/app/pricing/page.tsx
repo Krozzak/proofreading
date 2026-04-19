@@ -13,8 +13,8 @@ import { AuthModal } from '@/components/AuthModal';
 import { SpectrumLogo } from '@/components/SpectrumLogo';
 import { NavBar } from '@/components/NavBar';
 
-const MONTHLY_PRICE = 4.99;
-const YEARLY_PRICE = 47.90;
+const MONTHLY_PRICE = 20.00;
+const YEARLY_PRICE = 192.00;
 const YEARLY_SAVINGS = Math.round((MONTHLY_PRICE * 12 - YEARLY_PRICE) * 100) / 100;
 
 function PricingContent() {
@@ -52,14 +52,14 @@ function PricingContent() {
       tagline: 'Pour essayer Proofslab',
       description: 'Pour essayer Proofslab',
       features: [
-        '5 comparaisons par jour',
-        'Comparaison SSIM standard',
+        'Comparaisons SSIM illimitées',
+        '10 analyses IA offertes (à vie)',
+        'Heatmap des différences',
         'Export CSV des résultats',
         'Support par email',
       ],
       locked: [
-        'Analyse IA des différences',
-        'Rapports automatiques',
+        '100 analyses IA / mois',
         'Support prioritaire',
       ],
       cta: 'Commencer gratuitement',
@@ -73,12 +73,11 @@ function PricingContent() {
       yearlyTotal: billingPeriod === 'yearly' ? `$${YEARLY_PRICE}/an` : null,
       description: 'Pour les professionnels',
       features: [
-        '100 comparaisons par jour',
-        'Comparaison SSIM haute précision',
+        'Comparaisons SSIM illimitées',
+        '100 analyses IA / mois',
         'Heatmap des différences',
+        'Rapport IA détaillé par zone',
         'Export CSV des résultats',
-        'Analyse IA des différences (bientôt)',
-        'Rapports automatiques (bientôt)',
         'Support prioritaire',
       ],
       locked: [],
@@ -300,7 +299,7 @@ function PricingContent() {
               )}
               {plan.name === 'Enterprise' && (
                 <button
-                  onClick={() => { window.location.href = 'mailto:contact@proofslab.com'; }}
+                  onClick={() => { window.location.href = 'mailto:silliard.thomas@ekenor.com'; }}
                   style={ctaBtnStyle(false, false)}
                 >
                   {plan.cta}

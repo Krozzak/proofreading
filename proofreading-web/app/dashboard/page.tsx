@@ -126,7 +126,7 @@ function DashboardContent() {
                 Pro
               </span>
               {' '}— vous avez maintenant{' '}
-              <span style={{ fontWeight: 700, color: 'var(--c3)' }}>100 comparaisons/jour</span>.
+              <span style={{ fontWeight: 700, color: 'var(--c3)' }}>SSIM illimité + 100 analyses IA/mois</span>.
             </p>
           </div>
         </div>
@@ -224,7 +224,7 @@ function DashboardContent() {
           }}>
             <p style={{ color: 'var(--destructive)', fontWeight: 500 }}>Quota épuisé pour aujourd&apos;hui</p>
             <p style={{ fontSize: 13, color: 'var(--destructive)', opacity: 0.8, marginTop: 4 }}>
-              Passez au plan Pro pour 100 comparaisons/jour ou attendez demain.
+              Passez au plan Pro pour des comparaisons SSIM illimitées et 100 analyses IA/mois.
             </p>
           </div>
         )}
@@ -239,7 +239,7 @@ function DashboardContent() {
             <div>
               <h3 style={{ fontSize: 28, margin: '0 0 12px', letterSpacing: '-0.02em', fontWeight: 500 }}>Passez au Plan Pro</h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {['100 comparaisons/jour', 'SSIM haute précision', 'Heatmap diff', 'Debrief IA (bientôt)', 'Support prioritaire'].map(f => (
+                {['SSIM illimité', '100 analyses IA / mois', 'Rapport IA détaillé par zone', 'Heatmap diff', 'Support prioritaire'].map(f => (
                   <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, opacity: 0.85 }}>
                     <span style={{ width: 16, height: 16, borderRadius: '50%', background: 'var(--c3)', color: '#0a0a0a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
@@ -251,9 +251,9 @@ function DashboardContent() {
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
               <div style={{ fontSize: 72, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>
-                $4.99<span style={{ fontSize: 16, fontWeight: 400, opacity: 0.6, marginLeft: 6 }}>/ mois</span>
+                $20<span style={{ fontSize: 16, fontWeight: 400, opacity: 0.6, marginLeft: 6 }}>/ mois</span>
               </div>
-              <p style={{ fontSize: 12, opacity: 0.5, marginTop: 6, marginBottom: 20 }}>ou $47.90/an (-20%)</p>
+              <p style={{ fontSize: 12, opacity: 0.5, marginTop: 6, marginBottom: 20 }}>ou $192/an (-20%)</p>
               <button onClick={handleUpgrade} style={{
                 padding: '14px 32px', fontSize: 15, fontWeight: 600,
                 background: 'var(--c2)', color: '#0a0a0a',
@@ -327,7 +327,7 @@ function DashboardContent() {
               </p>
             </div>
             <button
-              onClick={() => { window.location.href = 'mailto:contact@proofslab.com'; }}
+              onClick={() => { window.location.href = 'mailto:silliard.thomas@ekenor.com'; }}
               style={{
                 padding: '10px 22px', fontSize: 14, fontWeight: 600,
                 background: 'transparent', color: 'var(--foreground)',
