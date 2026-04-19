@@ -49,7 +49,7 @@ export default function HomePage() {
               fontFamily: 'var(--font-instrument-serif)',
               fontWeight: 400,
               color: 'var(--c4)',
-            }}>BAT</em>{' '}
+            }}>PDF</em>{' '}
             <br />
             à la{' '}
             <span style={{

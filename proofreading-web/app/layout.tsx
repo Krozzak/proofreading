@@ -21,16 +21,16 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+  title: "Proofslab — Approuvez vos PDF à la vitesse du pixel",
   description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel. Score SSIM, heatmap des écarts, approbation en un clic.",
-  keywords: ["PDF comparison", "BAT", "print proofing", "SSIM", "document comparison", "quality control"],
+  keywords: ["PDF comparison", "PDF", "print proofing", "SSIM", "document comparison", "quality control"],
   authors: [{ name: "Proofslab" }],
   icons: {
     icon: "/logo.svg",
     apple: "/logo-apple.png",
   },
   openGraph: {
-    title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+    title: "Proofslab — Approuvez vos PDF à la vitesse du pixel",
     description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel. Score SSIM, heatmap, approbation batch.",
     url: "https://proofslab.com",
     siteName: "Proofslab",
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary",
-    title: "Proofslab — Approuvez vos BAT à la vitesse du pixel",
+    title: "Proofslab — Approuvez vos PDF à la vitesse du pixel",
     description: "Comparez vos fichiers design aux épreuves imprimeur pixel par pixel.",
     images: ["/logo.png"],
   },

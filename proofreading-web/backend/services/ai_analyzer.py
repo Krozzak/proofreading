@@ -17,7 +17,7 @@ AI_MODEL = "claude-haiku-4-5-20251001"
 
 # System prompt for printing QC analysis
 SYSTEM_PROMPT = """\
-You are an expert in print quality control (BAT / bon à tirer).
+You are an expert in print quality control for PDF documents.
 You will receive two images: the ORIGINAL design file and the PRINTED version.
 
 Your task: identify real printing errors between the two.
