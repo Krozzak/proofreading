@@ -89,20 +89,16 @@ function DashboardContent() {
     );
   }
 
-  const quotaPercentage = quota ? (quota.used / quota.limit) * 100 : 0;
-  const isQuotaLow = quota && quota.remaining <= 1;
-  const isQuotaEmpty = quota && quota.remaining === 0;
-
-  // Determine plan type based on quota limit
-  const getPlanName = (limit: number) => {
-    if (limit >= 999999) return 'Enterprise';
-    if (limit >= 100) return 'Pro';
-    if (limit >= 5) return 'Gratuit';
-    return 'Anonyme';
-  };
-
-  const planName = quota ? getPlanName(quota.limit) : 'Gratuit';
+  // Derive plan from tier field returned by backend
+  const planName = quota?.tier === 'enterprise' ? 'Enterprise'
+                 : quota?.tier === 'pro' ? 'Pro'
+                 : 'Gratuit';
   const isPro = planName === 'Pro' || planName === 'Enterprise';
+
+  const isUnlimited = isPro; // Pro/Enterprise have unlimited SSIM
+  const quotaPercentage = quota && !isUnlimited ? (quota.used / quota.limit) * 100 : 0;
+  const isQuotaLow = quota && !isUnlimited && quota.remaining <= 1;
+  const isQuotaEmpty = quota && !isUnlimited && quota.remaining === 0;
 
   const quotaColor = isQuotaEmpty ? 'var(--destructive)' : isQuotaLow ? 'var(--c2)' : 'var(--c4)';
 
@@ -150,36 +146,92 @@ function DashboardContent() {
           </h1>
         </div>
 
-        {/* Quota hero card */}
-        <div style={{
-          background: 'var(--c4)', color: '#fff',
-          borderRadius: 24, padding: 32, marginBottom: 20,
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-            <div>
-              <div style={{ fontSize: 13, opacity: 0.65, marginBottom: 8 }}>Comparaisons aujourd&apos;hui</div>
-              <div style={{ fontSize: 96, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em' }}>
-                {quota?.remaining ?? '—'}
-                <span style={{ fontSize: 36, opacity: 0.5 }}> / {quota?.limit ?? '—'}</span>
+        {/* Quota hero cards — SSIM + IA */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+
+          {/* SSIM card */}
+          <div style={{
+            background: 'var(--c4)', color: '#fff',
+            borderRadius: 24, padding: 28,
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ fontSize: 12, opacity: 0.65, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Comparaisons SSIM
               </div>
-              <div style={{ fontSize: 13, opacity: 0.65, marginTop: 8 }}>
-                restantes · reset à minuit
-              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
+                background: 'var(--c2)', color: '#0a0a0a',
+              }}>
+                Plan {planName}
+              </span>
             </div>
-            <span style={{
-              display: 'inline-block', padding: '6px 14px', fontSize: 12, fontWeight: 600,
-              background: 'var(--c2)', color: '#0a0a0a', borderRadius: 999,
-            }}>
-              Plan {planName}
-            </span>
+            <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+              {isUnlimited ? '∞' : (
+                <>
+                  {quota?.remaining ?? '—'}
+                  <span style={{ fontSize: 28, opacity: 0.5 }}> / {quota?.limit ?? '—'}</span>
+                </>
+              )}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.65 }}>
+              {isUnlimited ? 'Illimitées' : 'restantes · reset à minuit'}
+            </div>
+            {!isUnlimited && (
+              <div style={{ height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 4, overflow: 'hidden', marginTop: 16 }}>
+                <div style={{
+                  width: `${quotaPercentage}%`, height: '100%',
+                  background: '#fff', borderRadius: 4, transition: 'width 500ms ease',
+                }} />
+              </div>
+            )}
           </div>
-          <div style={{ height: 8, background: 'rgba(255,255,255,.15)', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{
-              width: `${quotaPercentage}%`, height: '100%',
-              background: '#fff', borderRadius: 4, transition: 'width 500ms ease',
-            }} />
+
+          {/* IA card */}
+          <div style={{
+            background: 'var(--foreground)', color: 'var(--background)',
+            borderRadius: 24, padding: 28,
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ fontSize: 12, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                Analyses IA
+              </div>
+              {!isPro && (
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 999,
+                  background: 'var(--c2)', color: '#0a0a0a',
+                }}>
+                  {quota?.aiLimit ?? 10} offertes
+                </span>
+              )}
+            </div>
+            {planName === 'Enterprise' ? (
+              <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+                ∞
+              </div>
+            ) : (
+              <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+                {quota?.aiRemaining ?? '—'}
+                <span style={{ fontSize: 28, opacity: 0.4, fontWeight: 400 }}>
+                  {' '}/ {quota?.aiLimit ?? '—'}{isPro ? ' / mois' : ' à vie'}
+                </span>
+              </div>
+            )}
+            <div style={{ fontSize: 12, opacity: 0.5 }}>
+              {planName === 'Enterprise' ? 'Illimitées' : isPro ? 'reset le 1er du mois' : 'trial · créez un compte Pro pour plus'}
+            </div>
+            {planName !== 'Enterprise' && quota && (
+              <div style={{ height: 4, background: 'rgba(255,255,255,.15)', borderRadius: 4, overflow: 'hidden', marginTop: 16 }}>
+                <div style={{
+                  width: `${Math.min(100, (quota.aiUsed / quota.aiLimit) * 100)}%`, height: '100%',
+                  background: quota.aiRemaining === 0 ? 'var(--destructive)' : 'var(--c2)', borderRadius: 4,
+                  transition: 'width 500ms ease',
+                }} />
+              </div>
+            )}
           </div>
+
         </div>
 
         {/* Info cards */}

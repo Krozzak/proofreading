@@ -36,6 +36,11 @@ export interface QuotaInfo {
   limit: number;
   remaining: number;
   resetsAt: string;
+  tier: string;
+  aiUsed: number;
+  aiLimit: number;
+  aiRemaining: number;
+  aiResetsAt: string;
 }
 
 /**

@@ -27,8 +27,11 @@ from services.quota_service import (
     get_quota,
     check_and_increment_quota,
     get_anonymous_quota,
-    check_and_increment_anonymous_quota
+    check_and_increment_anonymous_quota,
+    get_ai_quota,
+    check_and_increment_ai_quota,
 )
+from services.ai_analyzer import analyze_with_ai
 from services.stripe_service import (
     create_checkout_session,
     create_customer_portal_session,
@@ -166,6 +169,11 @@ class QuotaResponse(BaseModel):
     limit: int
     remaining: int
     resetsAt: str
+    tier: str
+    aiUsed: int
+    aiLimit: int
+    aiRemaining: int
+    aiResetsAt: str
 
 
 # Stripe models
@@ -263,6 +271,45 @@ class HistoryListResponse(BaseModel):
     total: int
 
 
+# AI Analysis models
+
+class AIAnalyzeRequest(BaseModel):
+    image1: str = Field(max_length=MAX_BASE64_LENGTH)  # Base64 encoded PNG
+    image2: str = Field(max_length=MAX_BASE64_LENGTH)  # Base64 encoded PNG
+
+
+class AIZone(BaseModel):
+    x_pct: float
+    y_pct: float
+    w_pct: float
+    h_pct: float
+
+
+class AIIssue(BaseModel):
+    zone: AIZone
+    type: str
+    severity: str
+    false_positive: bool
+    description: str
+
+
+class AIQuotaInfo(BaseModel):
+    used: int
+    limit: int
+    remaining: int
+    resetsAt: str
+
+
+class AIAnalyzeResponse(BaseModel):
+    success: bool
+    issues: list[AIIssue] = []
+    summary: str = ''
+    false_positive_count: int = 0
+    model_used: str = ''
+    ai_quota: AIQuotaInfo | None = None
+    error: str | None = None
+
+
 # Endpoints
 
 @app.get("/api/health", response_model=HealthResponse)
@@ -277,11 +324,22 @@ async def health_check():
 @app.get("/api/quota", response_model=QuotaResponse)
 async def get_user_quota(user: AuthenticatedUser = Depends(get_current_user)):
     """
-    Get current user's quota information.
+    Get current user's quota information (SSIM + AI).
     PROTECTED - Requires authentication.
     """
-    quota = get_quota(user.uid, user.tier)
-    return QuotaResponse(**quota)
+    ssim = get_quota(user.uid, user.tier)
+    ai = get_ai_quota(user.uid, user.tier)
+    return QuotaResponse(
+        used=ssim['used'],
+        limit=ssim['limit'],
+        remaining=ssim['remaining'],
+        resetsAt=ssim['resetsAt'],
+        tier=user.tier,
+        aiUsed=ai['used'],
+        aiLimit=ai['limit'],
+        aiRemaining=ai['remaining'],
+        aiResetsAt=ai['resetsAt'],
+    )
 
 
 @app.post("/api/convert", response_model=ConvertResponse)
@@ -382,6 +440,79 @@ async def compare_images(
     except Exception as e:
         logger.error(f"Image comparison error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Image comparison failed")
+
+
+# AI Analysis endpoint
+
+@app.post("/api/analyze", response_model=AIAnalyzeResponse)
+async def analyze_images_with_ai(
+    request: AIAnalyzeRequest,
+    user: AuthenticatedUser = Depends(get_current_user)
+):
+    """
+    Analyze two images using Claude vision to detect printing errors.
+    PROTECTED - Requires authentication. Requires Free or Pro tier.
+    Anonymous users are not allowed (cannot track lifetime quota).
+    """
+    if user.tier == 'anonymous':
+        raise HTTPException(
+            status_code=403,
+            detail="L'analyse IA nécessite un compte. Créez un compte gratuit pour 10 analyses offertes."
+        )
+
+    # Check and atomically increment AI quota
+    success, ai_quota = check_and_increment_ai_quota(user.uid, user.tier)
+
+    if not success:
+        if user.tier == 'free':
+            detail = "Vos 10 analyses IA gratuites ont été utilisées. Passez au plan Pro pour 100 analyses/mois."
+        else:
+            detail = "Quota d'analyses IA mensuel atteint (100/mois). Contactez-nous pour passer en Enterprise."
+        raise HTTPException(
+            status_code=429,
+            detail=detail,
+            headers={"X-AI-Quota-Remaining": "0"},
+        )
+
+    try:
+        img1_bytes = base64.b64decode(request.image1)
+        img2_bytes = base64.b64decode(request.image2)
+
+        result = analyze_with_ai(img1_bytes, img2_bytes)
+
+        # Parse issues — validate zone shape gracefully
+        issues = []
+        for raw in result.get('issues', []):
+            try:
+                zone_data = raw.get('zone', {})
+                issues.append(AIIssue(
+                    zone=AIZone(
+                        x_pct=float(zone_data.get('x_pct', 0)),
+                        y_pct=float(zone_data.get('y_pct', 0)),
+                        w_pct=float(zone_data.get('w_pct', 0)),
+                        h_pct=float(zone_data.get('h_pct', 0)),
+                    ),
+                    type=raw.get('type', 'other'),
+                    severity=raw.get('severity', 'medium'),
+                    false_positive=bool(raw.get('false_positive', False)),
+                    description=raw.get('description', ''),
+                ))
+            except Exception:
+                continue  # Skip malformed issues
+
+        return AIAnalyzeResponse(
+            success=True,
+            issues=issues,
+            summary=result.get('summary', ''),
+            false_positive_count=result.get('false_positive_count', 0),
+            model_used=result.get('model_used', ''),
+            ai_quota=AIQuotaInfo(**ai_quota),
+            error=result.get('error'),
+        )
+
+    except Exception as e:
+        logger.error(f"AI analysis error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="AI analysis failed")
 
 
 # Stripe endpoints
