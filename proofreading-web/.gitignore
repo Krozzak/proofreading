@@ -19,6 +19,7 @@
 
 # production
 /build
+/Proofslab-handoff
 
 # misc
 .DS_Store

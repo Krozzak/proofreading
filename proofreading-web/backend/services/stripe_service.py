@@ -195,10 +195,15 @@ def create_customer_portal_session(uid: str, return_url: str) -> str:
     if not customer_id:
         raise ValueError("No Stripe customer found for this user")
 
-    session = stripe.billing_portal.Session.create(
-        customer=customer_id,
-        return_url=return_url,
-    )
+    try:
+        session = stripe.billing_portal.Session.create(
+            customer=customer_id,
+            return_url=return_url,
+        )
+    except stripe.error.StripeError as e:
+        user_msg = getattr(e, 'user_message', None) or str(e)
+        logger.error(f"Stripe portal error for user {uid}: {user_msg}")
+        raise ValueError(f"Stripe error: {user_msg}")
 
     logger.info(f"Created portal session for user {uid}")
     return session.url

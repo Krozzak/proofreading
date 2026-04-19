@@ -114,13 +114,21 @@ function DashboardContent() {
       {/* ===== SUCCESS BANNER ===== */}
       {upgraded && (
         <div style={{
-          background: 'color-mix(in oklab, var(--success) 10%, var(--background))',
-          borderBottom: '1px solid color-mix(in oklab, var(--success) 25%, transparent)',
-          padding: '12px 32px', textAlign: 'center',
+          background: 'var(--foreground)',
+          borderBottom: '1px solid var(--border)',
+          padding: '20px 32px',
         }}>
-          <p style={{ color: 'var(--success)', fontWeight: 500 }}>
-            ✓ Bienvenue dans le plan Pro ! Vous avez maintenant 100 comparaisons/jour.
-          </p>
+          <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16 }}>
+            <img src="/logo.svg" alt="" width={28} height={28} style={{ flexShrink: 0 }} />
+            <p style={{ margin: 0, fontWeight: 500, fontSize: 17, color: 'var(--background)', fontFamily: 'var(--font-geist-sans)', letterSpacing: '-0.01em' }}>
+              Bienvenue dans le plan{' '}
+              <span style={{ fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 20, color: 'var(--c4)' }}>
+                Pro
+              </span>
+              {' '}— vous avez maintenant{' '}
+              <span style={{ fontWeight: 700, color: 'var(--c3)' }}>100 comparaisons/jour</span>.
+            </p>
+          </div>
         </div>
       )}
 
