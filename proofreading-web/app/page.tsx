@@ -34,7 +34,7 @@ export default function HomePage() {
             fontSize: 13, marginBottom: 40,
           }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c3)', flexShrink: 0 }} />
-            <span style={{ color: 'var(--muted-foreground)' }}>Plus de 2 400 studios utilisent Proofslab</span>
+            <span style={{ color: 'var(--muted-foreground)' }}>2 studios équipés dans 1 pays</span>
           </div>
 
           {/* Main headline */}
@@ -229,7 +229,7 @@ export default function HomePage() {
       }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
           {[
-            { num: '2 400+', label: 'Studios équipés', sub: 'dans 12 pays' },
+            { num: '2', label: 'Studios équipés', sub: 'dans 1 pays' },
             { num: '99.2%', label: 'Précision SSIM', sub: 'calibré pour le print' },
             { num: '< 30s', label: 'Par paire en moyenne', sub: 'sur un batch de 32 PDF' },
           ].map(s => (
