@@ -167,20 +167,20 @@ Stripe-Signature: <signature>
 
 ## Produits Stripe
 
-### Configuration actuelle (Test)
+### Configuration actuelle (Live)
 
 | Produit | Price ID | Prix |
 |---------|----------|------|
-| ProofsLab Pro Mensuel | `price_1StYbuDHtayMbPTRJ32Mehmt` | $4.99/mois |
-| ProofsLab Pro Annuel | `price_1StYcLDHtayMbPTRrf0Lc156` | $47.90/an |
+| ProofsLab Pro Mensuel | `price_1StYbuDHtayMbPTRJ32Mehmt` | $20.00/mois |
+| ProofsLab Pro Annuel | `price_1StYcLDHtayMbPTRrf0Lc156` | $192.00/an (-20%) |
 
 ### Création des produits (Dashboard Stripe)
 
 1. Aller dans **Products** > **Add product**
 2. Nom: "ProofsLab Pro"
 3. Créer 2 prix:
-   - Recurring, $4.99 USD, Monthly
-   - Recurring, $47.90 USD, Yearly
+   - Recurring, $20.00 USD, Monthly
+   - Recurring, $192.00 USD, Yearly
 4. Copier les Price IDs (`price_xxx`)
 
 ---

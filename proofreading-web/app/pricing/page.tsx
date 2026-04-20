@@ -28,7 +28,7 @@ function PricingContent() {
 
   const canceled = searchParams.get('canceled');
   const currentPlan = quota
-    ? (quota.limit >= 999999 ? 'Enterprise' : quota.limit >= 100 ? 'Pro' : 'Gratuit')
+    ? (quota.tier === 'enterprise' ? 'Enterprise' : quota.tier === 'pro' ? 'Pro' : 'Gratuit')
     : null;
 
   const handleUpgrade = async () => {

@@ -293,13 +293,21 @@ The proofreading-web app uses Firebase Authentication:
 - **Token flow**: Client gets ID token → sends in `Authorization: Bearer` header → backend verifies
 
 ### Quota System
-Usage quotas are managed per user tier:
+Usage quotas are managed per user tier, with two separate quota types:
+
+**SSIM Comparisons** (daily, resets midnight UTC):
 - **Anonymous**: 1 comparison/day (IP-based tracking)
-- **Free account**: 5 comparisons/day
-- **Pro account**: 100 comparisons/day
+- **Free account**: 10 comparisons/day
+- **Pro account**: Unlimited
 - **Enterprise**: Unlimited
 
-Quota data stored in Firestore (`users/{uid}` and `anonymous_quota/{ip_hash}`).
+**AI Analyses**:
+- **Anonymous**: 0 (not available)
+- **Free account**: 10 analyses lifetime (trial, never resets)
+- **Pro account**: 100 analyses/month (resets 1st of month UTC)
+- **Enterprise**: Unlimited
+
+Quota data stored in Firestore (`quotas/{uid}` for SSIM, `ai_quota/{uid}` for AI, `users/{uid}` for tier).
 
 ### Backend API Endpoints
 
@@ -342,7 +350,7 @@ gcloud secrets create firebase-service-account \
 
 ## Version Information
 
-- **proofreading-web**: v1.3.0 (frontend) / v2.2.0 (backend API)
+- **proofreading-web**: v1.4.0 (frontend) / v2.3.0 (backend API)
 - **STANDALONE_EXE**: v1.0.0 (hardcoded in printer_proofreading.py)
 - **PROOFREADING_WEB (legacy)**: No explicit version tracking
 
