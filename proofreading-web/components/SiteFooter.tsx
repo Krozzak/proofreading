@@ -10,7 +10,7 @@ export function SiteFooter() {
       padding: '28px 32px',
       background: 'var(--background)',
     }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+      <div className="site-footer-inner" style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
 
         {/* Left: logo + version */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -21,7 +21,7 @@ export function SiteFooter() {
         </div>
 
         {/* Right: legal links */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+        <nav className="site-footer-nav" style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
           {[
             { href: '/legal', label: 'Mentions légales' },
             { href: '/terms', label: 'CGU' },
@@ -49,7 +49,15 @@ export function SiteFooter() {
 
       <style>{`
         @media (max-width: 640px) {
-          .site-footer-inner { flex-direction: column; align-items: flex-start !important; }
+          .site-footer-inner {
+            flex-direction: column !important;
+            align-items: center !important;
+            text-align: center;
+            gap: 16px !important;
+          }
+          .site-footer-nav {
+            justify-content: center;
+          }
         }
       `}</style>
     </footer>

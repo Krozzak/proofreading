@@ -259,7 +259,7 @@ export default function HomePage() {
           .home-bento-span4 { grid-column: span 1 !important; min-height: auto !important; padding: 28px !important; }
           .home-bento-span2 { grid-column: span 1 !important; min-height: auto !important; }
           .home-ring-score { display: none !important; }
-          .home-stats-section { padding: 48px 20px !important; }
+          .home-stats-section { padding: 48px 20px !important; width: 100% !important; max-width: 100% !important; }
           .home-stats-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .home-footer { flex-direction: column !important; gap: 8px !important; text-align: center; padding: 20px !important; }
         }
