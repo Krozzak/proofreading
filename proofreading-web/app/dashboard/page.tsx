@@ -129,7 +129,7 @@ function DashboardContent() {
       )}
 
       {/* ===== MAIN CONTENT ===== */}
-      <div style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+      <div className="dashboard-main" style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
         {/* Page title */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 12 }}>
@@ -147,7 +147,7 @@ function DashboardContent() {
         </div>
 
         {/* Quota hero cards — SSIM + IA */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
+        <div className="dashboard-hero-cards" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
 
           {/* SSIM card */}
           <div style={{
@@ -166,7 +166,7 @@ function DashboardContent() {
                 Plan {planName}
               </span>
             </div>
-            <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+            <div className="dashboard-hero-number" style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
               {isUnlimited ? '∞' : (
                 <>
                   {quota?.remaining ?? '—'}
@@ -207,11 +207,11 @@ function DashboardContent() {
               )}
             </div>
             {planName === 'Enterprise' ? (
-              <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+              <div className="dashboard-hero-number" style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
                 ∞
               </div>
             ) : (
-              <div style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
+              <div className="dashboard-hero-number" style={{ fontSize: 72, fontWeight: 600, lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 8 }}>
                 {quota?.aiRemaining ?? '—'}
                 <span style={{ fontSize: 28, opacity: 0.4, fontWeight: 400 }}>
                   {' '}/ {quota?.aiLimit ?? '—'}{isPro ? ' / mois' : ' à vie'}
@@ -235,7 +235,7 @@ function DashboardContent() {
         </div>
 
         {/* Info cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+        <div className="dashboard-info-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
           {[
             {
               label: 'Email', value: user.email ?? '—',
@@ -302,7 +302,7 @@ function DashboardContent() {
               </ul>
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontSize: 72, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>
+              <div className="dashboard-upgrade-price" style={{ fontSize: 72, fontWeight: 600, letterSpacing: '-0.04em', lineHeight: 1 }}>
                 $20<span style={{ fontSize: 16, fontWeight: 400, opacity: 0.6, marginLeft: 6 }}>/ mois</span>
               </div>
               <p style={{ fontSize: 12, opacity: 0.5, marginTop: 6, marginBottom: 20 }}>ou $192/an (-20%)</p>
@@ -420,6 +420,16 @@ function DashboardContent() {
       <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center', marginTop: 'auto' }}>
         <SpectrumLogo size={20} wordmark />
       </footer>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .dashboard-main { padding: 32px 20px !important; }
+          .dashboard-hero-cards { grid-template-columns: 1fr !important; }
+          .dashboard-info-cards { grid-template-columns: 1fr !important; }
+          .dashboard-hero-number { font-size: 48px !important; }
+          .dashboard-upgrade-price { font-size: 48px !important; }
+        }
+      `}</style>
     </main>
   );
 }

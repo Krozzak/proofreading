@@ -195,7 +195,7 @@ export default function WorkspacePage() {
     <main style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
       <NavBar />
 
-      <div style={{ flex: 1, maxWidth: 1280, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+      <div className="workspace-main" style={{ flex: 1, maxWidth: 1280, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 48 }}>
@@ -233,7 +233,7 @@ export default function WorkspacePage() {
         </div>
 
         {/* Drop zones */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+        <div className="workspace-drop-zones" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
           <DropTile
             label="Originaux"
             description="Vos PDF de design"
@@ -251,7 +251,7 @@ export default function WorkspacePage() {
         </div>
 
         {/* Run panel — 2 colonnes Spectrum */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+        <div className="workspace-run-panel" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
 
           {/* Colonne gauche : threshold */}
           <div style={{
@@ -381,6 +381,14 @@ export default function WorkspacePage() {
         </div>
 
       </div>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .workspace-main { padding: 32px 20px !important; }
+          .workspace-drop-zones { grid-template-columns: 1fr !important; gap: 16px !important; }
+          .workspace-run-panel { grid-template-columns: 1fr !important; gap: 16px !important; }
+        }
+      `}</style>
     </main>
   );
 }

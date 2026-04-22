@@ -120,14 +120,14 @@ function PricingContent() {
       <NavBar />
 
       {/* ── Main ── */}
-      <div style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+      <div className="pricing-main" style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
 
         {/* Title */}
         <div style={{ marginBottom: 48, textAlign: 'center' }}>
           <div style={{ fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted-foreground)', marginBottom: 12 }}>
             Tarifs
           </div>
-          <h1 style={{ fontSize: 64, margin: '0 0 16px', lineHeight: 1, letterSpacing: '-0.03em', fontWeight: 500 }}>
+          <h1 className="pricing-title" style={{ fontSize: 64, margin: '0 0 16px', lineHeight: 1, letterSpacing: '-0.03em', fontWeight: 500 }}>
             Choisissez votre{' '}
             <em style={{ fontFamily: 'var(--font-instrument-serif)', fontStyle: 'italic', fontWeight: 400, color: 'var(--c4)' }}>
               plan
@@ -197,10 +197,11 @@ function PricingContent() {
         )}
 
         {/* Plans grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 80 }}>
+        <div className="pricing-plans-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 80 }}>
           {plans.map(plan => (
             <div
               key={plan.name}
+              className={plan.highlighted ? 'pricing-plan-card pricing-plan-highlighted' : 'pricing-plan-card'}
               style={{
                 background: plan.highlighted ? 'var(--c4)' : 'var(--card)',
                 color: plan.highlighted ? '#fff' : 'var(--foreground)',
@@ -339,6 +340,15 @@ function PricingContent() {
       </footer>
 
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
+
+      <style>{`
+        @media (max-width: 640px) {
+          .pricing-main { padding: 32px 20px !important; }
+          .pricing-title { font-size: 40px !important; }
+          .pricing-plans-grid { grid-template-columns: 1fr !important; }
+          .pricing-plan-highlighted { transform: none !important; }
+        }
+      `}</style>
     </main>
   );
 }

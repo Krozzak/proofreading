@@ -5,6 +5,9 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { SpectrumLogo } from './SpectrumLogo';
 import { UserMenu } from './UserMenu';
+import { ThemeToggle } from './ThemeToggle';
+import { useAuth } from '@/lib/auth-context';
+import { AuthModal } from './AuthModal';
 
 const NAV_LINKS = [
   { href: '/', label: 'Accueil', match: (p: string) => p === '/' },
@@ -16,10 +19,12 @@ const NAV_LINKS = [
 export function NavBar({ children }: { children?: React.ReactNode }) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <>
-      <header style={{
+      <header className="nav-header" style={{
         position: 'sticky', top: 0, zIndex: 50,
         backdropFilter: 'blur(12px)',
         background: 'color-mix(in oklab, var(--background) 90%, transparent)',
@@ -58,7 +63,14 @@ export function NavBar({ children }: { children?: React.ReactNode }) {
         {/* Right: page controls + user + hamburger */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           {children}
-          <UserMenu />
+          {/* UserMenu hidden on mobile — actions moved to hamburger dropdown */}
+          <div className="nav-user-menu">
+            <UserMenu />
+          </div>
+          {/* ThemeToggle always visible */}
+          <div className="nav-theme-mobile">
+            <ThemeToggle />
+          </div>
           {/* Hamburger — mobile only */}
           <button
             className="nav-hamburger"
@@ -115,14 +127,79 @@ export function NavBar({ children }: { children?: React.ReactNode }) {
               </Link>
             );
           })}
+
+          {/* Auth actions in mobile menu */}
+          <div style={{ height: 1, background: 'var(--border)', margin: '6px 0' }} />
+          {user ? (
+            <>
+              <Link href="/dashboard" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                <span style={{
+                  display: 'block', fontSize: 14, fontWeight: 400,
+                  color: 'var(--muted-foreground)', padding: '8px 12px', borderRadius: 8,
+                }}>
+                  Tableau de bord
+                </span>
+              </Link>
+              <Link href="/history" onClick={() => setMenuOpen(false)} style={{ textDecoration: 'none' }}>
+                <span style={{
+                  display: 'block', fontSize: 14, fontWeight: 400,
+                  color: 'var(--muted-foreground)', padding: '8px 12px', borderRadius: 8,
+                }}>
+                  Historique
+                </span>
+              </Link>
+              <button
+                onClick={() => { setMenuOpen(false); signOut(); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left',
+                  fontSize: 14, fontWeight: 400, color: 'var(--destructive)',
+                  padding: '8px 12px', borderRadius: 8,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                }}
+              >
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <div style={{ display: 'flex', gap: 8, padding: '4px 4px' }}>
+              <button
+                onClick={() => { setMenuOpen(false); setShowAuth(true); }}
+                style={{
+                  flex: 1, padding: '10px 16px', fontSize: 14, fontWeight: 500,
+                  background: 'transparent', color: 'var(--foreground)',
+                  border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer',
+                }}
+              >
+                Se connecter
+              </button>
+              <button
+                onClick={() => { setMenuOpen(false); setShowAuth(true); }}
+                style={{
+                  flex: 1, padding: '10px 16px', fontSize: 14, fontWeight: 600,
+                  background: 'var(--foreground)', color: 'var(--background)',
+                  border: 'none', borderRadius: 10, cursor: 'pointer',
+                }}
+              >
+                Essayer
+              </button>
+            </div>
+          )}
         </div>
       )}
 
+      <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
+
       <style>{`
         @media (max-width: 640px) {
+          .nav-header { padding: 0 16px !important; }
           .nav-desktop { display: none !important; }
           .nav-hamburger { display: flex !important; }
           .nav-mobile-menu { display: flex !important; }
+          .nav-user-menu { display: none !important; }
+          .nav-theme-mobile { display: flex; }
+        }
+        @media (min-width: 641px) {
+          .nav-theme-mobile { display: none; }
         }
       `}</style>
     </>

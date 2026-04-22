@@ -446,7 +446,7 @@ export function ComparisonView({
       </div>
 
       {/* ── PDFs side by side ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div className="comparison-panels" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <PDFPanel
           label="ORIGINAL"
           filename={pair.originalFile?.name || ''}
@@ -618,6 +618,12 @@ export function ComparisonView({
           )}
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 640px) {
+          .comparison-panels { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
       {/* ── Floating action bar (fixed bottom) ── */}
       <FloatingBar

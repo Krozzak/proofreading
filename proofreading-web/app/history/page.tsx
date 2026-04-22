@@ -138,7 +138,7 @@ export default function HistoryPage() {
       <NavBar />
 
       {/* ── Main ── */}
-      <div style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
+      <div className="history-main" style={{ flex: 1, maxWidth: 1100, margin: '0 auto', width: '100%', padding: '48px 32px' }}>
 
         {/* Title + Toolbar inline */}
         <div style={{
@@ -237,7 +237,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
+        <div className="history-stat-cards" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
           {[
             { label: 'Total', value: total, color: 'var(--foreground)' },
             { label: 'Approuvés', value: entries.filter(e => e.validation === 'approved').length, color: 'var(--c3)' },
@@ -405,6 +405,13 @@ export default function HistoryPage() {
       <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center' }}>
         <SpectrumLogo size={20} wordmark />
       </footer>
+
+      <style>{`
+        @media (max-width: 640px) {
+          .history-main { padding: 32px 20px !important; }
+          .history-stat-cards { grid-template-columns: 1fr 1fr !important; }
+        }
+      `}</style>
     </main>
   );
 }

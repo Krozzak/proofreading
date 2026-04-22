@@ -10,7 +10,7 @@ export default function HomePage() {
       <NavBar />
 
       {/* ============ HERO ============ */}
-      <section style={{ position: 'relative', padding: '80px 32px 100px', overflow: 'hidden' }}>
+      <section className="home-hero" style={{ position: 'relative', padding: '80px 32px 100px', overflow: 'hidden' }}>
         {/* Decorative blobs */}
         <div className="blob-drift" style={{
           position: 'absolute', top: -100, right: -80, width: 380, height: 380,
@@ -39,7 +39,7 @@ export default function HomePage() {
 
           {/* Main headline */}
           <h1 style={{
-            fontSize: 'clamp(56px, 9vw, 120px)', lineHeight: 0.92, letterSpacing: '-0.05em',
+            fontSize: 'clamp(40px, 9vw, 120px)', lineHeight: 0.92, letterSpacing: '-0.05em',
             margin: '0 0 32px', color: 'var(--foreground)', fontWeight: 500, maxWidth: 1100,
             fontFamily: 'var(--font-geist-sans)',
           }}>
@@ -101,7 +101,7 @@ export default function HomePage() {
           </div>
 
           {/* Metric tiles mosaic */}
-          <div style={{
+          <div className="home-metric-tiles" style={{
             marginTop: 80,
             display: 'grid',
             gridTemplateColumns: 'repeat(12, 1fr)',
@@ -120,10 +120,10 @@ export default function HomePage() {
       </section>
 
       {/* ============ FEATURES BENTO ============ */}
-      <section id="comment" style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
+      <section id="comment" className="home-features-section" style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
+        <div className="home-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
           {/* Big feature — SSIM */}
-          <div style={{
+          <div className="home-bento-span4" style={{
             gridColumn: 'span 4',
             background: 'var(--foreground)', color: 'var(--background)',
             borderRadius: 28, padding: 48,
@@ -144,7 +144,7 @@ export default function HomePage() {
           </div>
 
           {/* Gain de temps */}
-          <div style={{
+          <div className="home-bento-span2" style={{
             gridColumn: 'span 2',
             background: 'var(--c2)', color: '#0a0a0a',
             borderRadius: 28, padding: 32, minHeight: 360,
@@ -158,7 +158,7 @@ export default function HomePage() {
           </div>
 
           {/* Auto-approve */}
-          <div style={{
+          <div className="home-bento-span2" style={{
             gridColumn: 'span 2',
             background: 'var(--card)', border: '1px solid var(--border)',
             borderRadius: 28, padding: 32, minHeight: 280,
@@ -182,7 +182,7 @@ export default function HomePage() {
           </div>
 
           {/* Heatmap */}
-          <div style={{
+          <div className="home-bento-span2" style={{
             gridColumn: 'span 2',
             background: 'var(--c4)', color: '#fff',
             borderRadius: 28, padding: 32, minHeight: 280,
@@ -198,7 +198,7 @@ export default function HomePage() {
           </div>
 
           {/* AI coming soon */}
-          <div style={{
+          <div className="home-bento-span2" style={{
             gridColumn: 'span 2',
             background: 'var(--muted)', border: '1px dashed var(--border-strong, var(--border))',
             borderRadius: 28, padding: 32, minHeight: 280,
@@ -223,11 +223,11 @@ export default function HomePage() {
 
       {/* ============ STATS ============ */}
       {/* TODO: remplacer ces valeurs fictives (issues du design) par de vraies données */}
-      <section style={{
+      <section className="home-stats-section" style={{
         padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%',
         borderTop: '1px solid var(--border)',
       }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
+        <div className="home-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
           {[
             { num: '2', label: 'Studios équipés', sub: 'dans 1 pays' },
             { num: '99.2%', label: 'Précision SSIM', sub: 'calibré pour le print' },
@@ -249,7 +249,7 @@ export default function HomePage() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer style={{
+      <footer className="home-footer" style={{
         borderTop: '1px solid var(--border)', padding: '20px 32px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         fontSize: 13, color: 'var(--muted-foreground)',
@@ -257,6 +257,19 @@ export default function HomePage() {
         <SpectrumLogo size={22} wordmark />
         <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 11 }}>v1.3.0 · PDF Comparison Laboratory</span>
       </footer>
+      <style>{`
+        @media (max-width: 640px) {
+          .home-hero { padding: 48px 20px 56px !important; }
+          .home-metric-tiles { display: none !important; }
+          .home-features-section { padding: 48px 20px !important; }
+          .home-features-grid { grid-template-columns: 1fr !important; }
+          .home-bento-span4 { grid-column: span 1 !important; }
+          .home-bento-span2 { grid-column: span 1 !important; }
+          .home-stats-section { padding: 48px 20px !important; }
+          .home-stats-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
+          .home-footer { flex-direction: column !important; gap: 8px !important; text-align: center; padding: 20px !important; }
+        }
+      `}</style>
     </main>
   );
 }

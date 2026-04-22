@@ -445,7 +445,7 @@ export default function ComparePage() {
       )}
 
       {/* ── Stats strip ── */}
-      <div style={{ padding: '12px 20px 0', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 10 }}>
+      <div className="compare-stats-strip" style={{ padding: '12px 20px 0', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 10 }}>
         {/* Batch progress */}
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Batch · {pairs.length} paires</div>
@@ -550,6 +550,12 @@ export default function ComparePage() {
       </>
 
       <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} />
+
+      <style>{`
+        @media (max-width: 640px) {
+          .compare-stats-strip { grid-template-columns: 1fr 1fr !important; padding: 8px 12px 0 !important; }
+        }
+      `}</style>
     </main>
   );
 }
