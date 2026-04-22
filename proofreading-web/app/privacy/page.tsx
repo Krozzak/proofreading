@@ -61,7 +61,7 @@ export default function PrivacyPage() {
             <ul style={{ paddingLeft: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <li><strong>Accès</strong> — obtenir une copie de vos données</li>
               <li><strong>Rectification</strong> — corriger des données inexactes</li>
-              <li><strong>Suppression</strong> — demander l'effacement de votre compte et de vos données</li>
+              <li><strong>Suppression</strong> — demander l'effacement de votre compte et de vos données en envoyant un email à <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a> avec l'objet « Suppression de compte »</li>
               <li><strong>Portabilité</strong> — recevoir vos données dans un format structuré</li>
               <li><strong>Opposition</strong> — vous opposer à certains traitements</li>
             </ul>

@@ -211,8 +211,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         </div>
 
         {mode === 'register' && (
-          <p className="text-xs text-muted-foreground text-center">
-            5 comparaisons/jour gratuites avec un compte
+          <p className="text-xs text-muted-foreground text-center leading-relaxed">
+            En créant un compte, vous acceptez nos{' '}
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              Conditions d&apos;utilisation
+            </a>{' '}
+            et notre{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-foreground">
+              Politique de confidentialité
+            </a>.
           </p>
         )}
       </DialogContent>
