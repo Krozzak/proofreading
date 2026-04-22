@@ -120,7 +120,7 @@ export default function HomePage() {
       </section>
 
       {/* ============ FEATURES BENTO ============ */}
-      <section id="comment" className="home-features-section" style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
+      <section id="comment" className="home-features-section" style={{ padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
         <div className="home-features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 16 }}>
           {/* Big feature — SSIM */}
           <div className="home-bento-span4" style={{
@@ -138,7 +138,7 @@ export default function HomePage() {
               Score SSIM calibré pour le print. Détecte ce que l&apos;œil manque : teintes décalées de 2%, texte rogné d&apos;1mm, éléments manquants.
             </p>
             {/* Ring score */}
-            <div style={{ position: 'absolute', right: 48, bottom: 48, width: 120, height: 120 }}>
+            <div className="home-ring-score" style={{ position: 'absolute', right: 48, bottom: 48, width: 120, height: 120 }}>
               <RingScore score={97.4} color="var(--c3)" size={120} trackColor="rgba(255,255,255,0.1)" textColor="var(--background)" />
             </div>
           </div>
@@ -225,7 +225,7 @@ export default function HomePage() {
       {/* TODO: remplacer ces valeurs fictives (issues du design) par de vraies données */}
       <section className="home-stats-section" style={{
         padding: '80px 32px', maxWidth: 1280, margin: '0 auto', width: '100%',
-        borderTop: '1px solid var(--border)',
+        borderTop: '1px solid var(--border)', boxSizing: 'border-box',
       }}>
         <div className="home-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 48 }}>
           {[
@@ -263,8 +263,9 @@ export default function HomePage() {
           .home-metric-tiles { display: none !important; }
           .home-features-section { padding: 48px 20px !important; }
           .home-features-grid { grid-template-columns: 1fr !important; }
-          .home-bento-span4 { grid-column: span 1 !important; }
-          .home-bento-span2 { grid-column: span 1 !important; }
+          .home-bento-span4 { grid-column: span 1 !important; min-height: auto !important; padding: 28px !important; }
+          .home-bento-span2 { grid-column: span 1 !important; min-height: auto !important; }
+          .home-ring-score { display: none !important; }
           .home-stats-section { padding: 48px 20px !important; }
           .home-stats-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
           .home-footer { flex-direction: column !important; gap: 8px !important; text-align: center; padding: 20px !important; }
