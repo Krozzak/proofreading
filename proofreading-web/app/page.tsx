@@ -1,7 +1,7 @@
 'use client';
 
-import { SpectrumLogo } from '@/components/SpectrumLogo';
 import { NavBar } from '@/components/NavBar';
+import { SiteFooter } from '@/components/SiteFooter';
 
 export default function HomePage() {
   return (
@@ -249,14 +249,7 @@ export default function HomePage() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="home-footer" style={{
-        borderTop: '1px solid var(--border)', padding: '20px 32px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        fontSize: 13, color: 'var(--muted-foreground)',
-      }}>
-        <SpectrumLogo size={22} wordmark />
-        <span style={{ fontFamily: 'var(--font-geist-mono)', fontSize: 11 }}>v1.3.0 · PDF Comparison Laboratory</span>
-      </footer>
+      <SiteFooter />
       <style>{`
         @media (max-width: 640px) {
           .home-hero { padding: 48px 20px 56px !important; }

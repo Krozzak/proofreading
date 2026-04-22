@@ -6,12 +6,11 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { redirectToCheckout, type BillingPeriod } from '@/lib/stripe';
 import { AuthModal } from '@/components/AuthModal';
-import { SpectrumLogo } from '@/components/SpectrumLogo';
 import { NavBar } from '@/components/NavBar';
+import { SiteFooter } from '@/components/SiteFooter';
 
 const MONTHLY_PRICE = 20.00;
 const YEARLY_PRICE = 192.00;
@@ -20,7 +19,7 @@ const YEARLY_SAVINGS = Math.round((MONTHLY_PRICE * 12 - YEARLY_PRICE) * 100) / 1
 function PricingContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, loading, getIdToken, quota } = useAuth();
+  const { user, getIdToken, quota } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -334,10 +333,7 @@ function PricingContent() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center' }}>
-        <SpectrumLogo size={20} wordmark />
-      </footer>
+      <SiteFooter />
 
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 

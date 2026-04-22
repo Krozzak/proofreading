@@ -10,8 +10,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { getUserHistory, deleteHistoryEntry } from '@/lib/history-api';
-import { SpectrumLogo } from '@/components/SpectrumLogo';
 import { NavBar } from '@/components/NavBar';
+import { SiteFooter } from '@/components/SiteFooter';
 import type { HistoryEntry } from '@/lib/types';
 
 export default function HistoryPage() {
@@ -401,10 +401,7 @@ export default function HistoryPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--border)', padding: '16px 32px', display: 'flex', justifyContent: 'center' }}>
-        <SpectrumLogo size={20} wordmark />
-      </footer>
+      <SiteFooter />
 
       <style>{`
         @media (max-width: 640px) {
