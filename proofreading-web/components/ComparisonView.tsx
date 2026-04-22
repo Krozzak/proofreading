@@ -620,7 +620,7 @@ export function ComparisonView({
       )}
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .comparison-panels { grid-template-columns: 1fr !important; }
         }
       `}</style>

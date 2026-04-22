@@ -251,7 +251,7 @@ export default function HomePage() {
       {/* ============ FOOTER ============ */}
       <SiteFooter />
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .home-hero { padding: 48px 20px 56px !important; }
           .home-metric-tiles { display: none !important; }
           .home-features-section { padding: 48px 20px !important; }

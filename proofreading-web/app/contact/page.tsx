@@ -137,7 +137,7 @@ export default function ContactPage() {
       <SiteFooter />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .contact-cards { grid-template-columns: 1fr !important; }
         }
       `}</style>

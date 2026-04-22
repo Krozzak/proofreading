@@ -552,7 +552,7 @@ export default function ComparePage() {
       <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .compare-stats-strip { grid-template-columns: 1fr 1fr !important; padding: 8px 12px 0 !important; }
         }
       `}</style>

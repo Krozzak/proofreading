@@ -419,7 +419,7 @@ function DashboardContent() {
       <SiteFooter />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .dashboard-main { padding: 32px 20px !important; }
           .dashboard-hero-cards { grid-template-columns: 1fr !important; }
           .dashboard-info-cards { grid-template-columns: 1fr !important; }

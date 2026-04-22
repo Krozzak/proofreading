@@ -404,7 +404,7 @@ export default function HistoryPage() {
       <SiteFooter />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .history-main { padding: 32px 20px !important; }
           .history-stat-cards { grid-template-columns: 1fr 1fr !important; }
         }

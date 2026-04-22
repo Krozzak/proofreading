@@ -190,7 +190,7 @@ export function NavBar({ children }: { children?: React.ReactNode }) {
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .nav-header { padding: 0 16px !important; }
           .nav-desktop { display: none !important; }
           .nav-hamburger { display: flex !important; }
@@ -198,7 +198,7 @@ export function NavBar({ children }: { children?: React.ReactNode }) {
           .nav-user-menu { display: none !important; }
           .nav-theme-mobile { display: flex; }
         }
-        @media (min-width: 641px) {
+        @media (min-width: 901px) {
           .nav-theme-mobile { display: none; }
         }
       `}</style>

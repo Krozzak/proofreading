@@ -338,7 +338,7 @@ function PricingContent() {
       <AuthModal isOpen={showAuth} onClose={() => setShowAuth(false)} />
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .pricing-main { padding: 32px 20px !important; }
           .pricing-title { font-size: 40px !important; }
           .pricing-plans-grid { grid-template-columns: 1fr !important; }

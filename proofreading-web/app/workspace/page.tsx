@@ -383,7 +383,7 @@ export default function WorkspacePage() {
       </div>
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .workspace-main { padding: 32px 20px !important; }
           .workspace-drop-zones { grid-template-columns: 1fr !important; gap: 16px !important; }
           .workspace-run-panel { grid-template-columns: 1fr !important; gap: 16px !important; }

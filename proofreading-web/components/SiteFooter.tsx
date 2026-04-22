@@ -48,7 +48,7 @@ export function SiteFooter() {
       </div>
 
       <style>{`
-        @media (max-width: 640px) {
+        @media (max-width: 900px) {
           .site-footer-inner {
             flex-direction: column !important;
             align-items: center !important;
