@@ -32,7 +32,7 @@ export default function LegalPage() {
               { label: 'Nom', value: 'Thomas Silliard' },
               { label: 'Statut', value: 'Entrepreneur individuel' },
               { label: 'Pays', value: 'Canada' },
-              { label: 'Email', value: 'silliard.thomas@gmail.com' },
+              { label: 'Email', value: 'silliard.thomas@ekenor.com' },
             ]} />
           </Section>
 
@@ -45,7 +45,7 @@ export default function LegalPage() {
           </Section>
 
           <Section title="Directeur de la publication">
-            <p>Thomas Silliard — <a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a></p>
+            <p>Thomas Silliard — <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a></p>
           </Section>
 
           <Section title="Propriété intellectuelle">
@@ -63,7 +63,7 @@ export default function LegalPage() {
           </Section>
 
           <Section title="Contact">
-            <p>Pour toute question relative aux présentes mentions légales : <a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a></p>
+            <p>Pour toute question relative aux présentes mentions légales : <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a></p>
           </Section>
 
         </div>

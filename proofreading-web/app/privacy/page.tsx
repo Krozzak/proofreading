@@ -26,7 +26,7 @@ export default function PrivacyPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
 
           <Section title="1. Responsable du traitement">
-            <p>Thomas Silliard, entrepreneur individuel basé au Canada, est responsable du traitement des données personnelles collectées via Proofslab (<a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a>).</p>
+            <p>Thomas Silliard, entrepreneur individuel basé au Canada, est responsable du traitement des données personnelles collectées via Proofslab (<a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a>).</p>
           </Section>
 
           <Section title="2. Données collectées">
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
               <li><strong>Portabilité</strong> — recevoir vos données dans un format structuré</li>
               <li><strong>Opposition</strong> — vous opposer à certains traitements</li>
             </ul>
-            <p>Pour exercer ces droits : <a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a>. Réponse sous 30 jours.</p>
+            <p>Pour exercer ces droits : <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a>. Réponse sous 30 jours.</p>
           </Section>
 
           <Section title="6. Cookies">
@@ -81,7 +81,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="Contact & réclamations">
-            <p>Pour toute question relative à vos données : <a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a></p>
+            <p>Pour toute question relative à vos données : <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a></p>
             <p>Si vous estimez que vos droits ne sont pas respectés, vous avez le droit de déposer une plainte auprès de l'autorité compétente au Canada (Commissariat à la protection de la vie privée — <a href="https://www.priv.gc.ca" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--c4)', textDecoration: 'none' }}>priv.gc.ca</a>).</p>
           </Section>
 

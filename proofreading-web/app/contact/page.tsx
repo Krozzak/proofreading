@@ -9,7 +9,7 @@ export default function ContactPage() {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText('silliard.thomas@gmail.com');
+    navigator.clipboard.writeText('silliard.thomas@ekenor.com');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -46,7 +46,7 @@ export default function ContactPage() {
             <div>
               <div style={{ fontSize: 12, opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Email</div>
               <div style={{ fontSize: 20, fontWeight: 600, letterSpacing: '-0.02em', fontFamily: 'var(--font-geist-mono)' }}>
-                silliard.thomas@gmail.com
+                silliard.thomas@ekenor.com
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
@@ -77,7 +77,7 @@ export default function ContactPage() {
                 )}
               </button>
               <a
-                href="mailto:silliard.thomas@gmail.com"
+                href="mailto:silliard.thomas@ekenor.com"
                 style={{
                   padding: '10px 20px', fontSize: 13, fontWeight: 600,
                   background: 'var(--background)', color: 'var(--foreground)',
@@ -103,7 +103,7 @@ export default function ContactPage() {
             ].map(card => (
               <a
                 key={card.title}
-                href={`mailto:silliard.thomas@gmail.com?subject=${encodeURIComponent(card.title)}`}
+                href={`mailto:silliard.thomas@ekenor.com?subject=${encodeURIComponent(card.title)}`}
                 style={{ textDecoration: 'none' }}
               >
                 <div style={{

@@ -78,7 +78,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="Contact">
-            <p>Pour toute question : <a href="mailto:silliard.thomas@gmail.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@gmail.com</a></p>
+            <p>Pour toute question : <a href="mailto:silliard.thomas@ekenor.com" style={{ color: 'var(--c4)', textDecoration: 'none' }}>silliard.thomas@ekenor.com</a></p>
           </Section>
 
         </div>
