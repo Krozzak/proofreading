@@ -131,6 +131,26 @@ The E2E covers: ingestion (valid/invalid filenames), Excel column validation,
 standard/CUBBY/MIXED/scanned lithos, approve/reject with auto-advance, report
 export (8 sheets), session export, and brand switching.
 
+## Vision & roadmap
+
+**Target state**: this app is meant to be embedded as an **application inside
+the internal L'Oréal GPT** — our validation interface for the visual work, the
+GPT chat for questions, guidance and brand creation. The current standalone
+single-file build exists to **prove the concept** internally first.
+
+The architecture already anticipates that integration:
+
+- the validation UI is self-contained and server-free (embeds anywhere);
+- the AI layer is provider-agnostic (`src/lib/ai/client.ts`) — swapping the
+  direct API calls for the host GPT's runtime is a single adapter;
+- the free-form check channel (AiPanel question) and the brand-JSON contract
+  (`BrandDefinition`) are exactly the interfaces a host chat would drive;
+- `docs/COMPAGNON_PROMPT.md` already defines the GPT-side behavior — today as
+  a copy-paste prompt, tomorrow as the embedded app's system instructions.
+
+Separately, a ProofsLab integration (dedicated page on proofslab.com) is
+planned as Phase 2 of the monorepo roadmap.
+
 ## Sessions
 
 - Autosaved to localStorage on every change (a few KB — statuses + comments).
