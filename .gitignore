@@ -16,6 +16,7 @@ eggs/
 .eggs/
 lib/
 !proofreading-web/lib/
+!artwork-validator-web/src/lib/
 lib64/
 parts/
 sdist/
@@ -140,6 +141,16 @@ Thumbs.db
 /static/uploads/
 *.pdf
 !docs/*.pdf
+!artwork-validator-web/tests/fixtures/**/*.pdf
+
+# artwork_validator (desktop) runtime artifacts
+artwork_validator/app_settings.json
+artwork_validator/reports/
+
+# artwork-validator-web (Node)
+artwork-validator-web/node_modules/
+artwork-validator-web/dist/
+artwork-validator-web/e2e-out/
 
 # Test files
 test_files/
