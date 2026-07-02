@@ -4,46 +4,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ProofsLab** is a PDF comparison tool for validating printed materials against original designs. The repository contains multiple implementations:
+This monorepo contains four projects around printed-artwork validation:
 
-1. **proofreading-web** - Next.js frontend + FastAPI backend (current production version)
-2. **PROOFREADING/PROOFREADING_WEB** - Legacy Flask web application
-3. **PROOFREADING/STANDALONE_EXE** - Tkinter desktop application
-4. **Legacy versions** - Earlier iterations (proofreading.py, proofreading_v2.py)
-
-All implementations use SSIM (Structural Similarity Index) to compare PDF documents by converting them to images and calculating similarity scores.
+1. **proofreading-web** - "ProofsLab" SaaS: Next.js frontend + FastAPI backend (production, proofslab.com). SSIM comparison of design vs printer PDFs.
+2. **PROOFREADING** - Desktop Tkinter SSIM comparison tool (`proofreading_v3.py` current; v1/v2 archived in `PROOFREADING/legacy/`).
+3. **artwork_validator** - Desktop PyQt6 "L'Oréal Litho Validator": validates litho PDFs against an Excel brief with per-brand rules (MNY, ESSIE). ~22k lines, French README.
+4. **artwork-validator-web** - Browser port of artwork_validator (Vite + React + TS). Builds to ONE self-contained `dist/index.html` that works via `file://`. `src/core/` is a 1:1 port of `artwork_validator/core/` with a Python↔TS parity test suite.
 
 ## Project Structure
 
 ```
-Projet_ProofReading/
-├── proofreading-web/                # Current production (Next.js + FastAPI)
-│   ├── app/                         # Next.js pages
-│   │   ├── page.tsx                 # Home page with upload
-│   │   ├── compare/page.tsx         # Comparison interface
-│   │   └── dashboard/page.tsx       # User dashboard
-│   ├── components/                  # React components
-│   │   ├── AuthModal.tsx            # Login/signup modal
-│   │   ├── UserMenu.tsx             # User dropdown menu
-│   │   └── QuotaDisplay.tsx         # Quota usage display
-│   ├── lib/                         # Utilities
-│   │   ├── auth-context.tsx         # Firebase auth context
-│   │   ├── firebase.ts              # Firebase client config
-│   │   └── pdf-utils.ts             # PDF handling utilities
-│   └── backend/                     # FastAPI backend (Cloud Run)
+proofreading/
+├── proofreading-web/                # ProofsLab SaaS (Next.js 16 + FastAPI)
+│   ├── app/                         # App Router pages (home, compare, dashboard,
+│   │                                #   history, workspace, pricing, contact, legal…)
+│   ├── components/                  # React components (+ components/ui shadcn)
+│   ├── lib/                         # auth-context, firebase, pdf-utils, store…
+│   └── backend/                     # FastAPI on Cloud Run
 │       ├── main.py                  # API endpoints
-│       ├── cloudbuild.yaml          # GCP deployment config
-│       ├── Dockerfile               # Container config
-│       └── services/
-│           ├── firebase_admin.py    # Firebase Admin SDK
-│           ├── auth_dependency.py   # Auth middleware
-│           ├── quota_service.py     # Usage quota management
-│           ├── pdf_converter.py     # PDF to image conversion
-│           └── ssim_calculator.py   # SSIM comparison
-├── PROOFREADING/                    # Legacy implementations
-│   ├── PROOFREADING_WEB/            # Flask web application
-│   └── STANDALONE_EXE/              # Tkinter desktop application
+│       └── services/                # firebase_admin, auth, quota, pdf, ssim,
+│                                    #   ai_analyzer, stripe, history
+├── PROOFREADING/                    # Desktop SSIM tool (Tkinter)
+│   ├── proofreading_v3.py           # Current version
+│   ├── PrinterProofreading_v3.spec  # PyInstaller spec
+│   └── legacy/                      # v1, v2, old spec
+├── artwork_validator/               # Desktop litho validator (PyQt6)
+│   ├── core/                        # excel_processor, validator (legacy engine),
+│   │   │                            #   enhanced_validator, pdf_processor,
+│   │   │                            #   report_generator, data_collector,
+│   │   │                            #   error_templates, ocr_processor (optional)
+│   │   ├── brand_configs/           # MNY + ESSIE rules (Abstract Factory)
+│   │   └── basecamp/                # Selenium Basecamp automation (desktop-only)
+│   ├── ui/                          # PyQt6 UI
+│   ├── utils/                       # session_manager (JSON sessions)
+│   └── scripts/gen_parity_vectors.py# Generates web-port parity test vectors
+├── artwork-validator-web/           # Web litho validator (single-file build)
+│   ├── src/core/                    # 1:1 TS port of artwork_validator/core
+│   ├── src/lib/                     # pdfEngine (pdf.js inline worker), excelIO
+│   │                                #   (exceljs), sessionStore (localStorage)
+│   ├── src/ui/ + src/state/         # French React UI + Zustand store
+│   ├── tests/                       # vitest; fixtures/parity/vectors.json
+│   └── scripts/                     # gen_fixtures.py, e2e.mjs (Playwright file://)
+└── docs/DOCUMENTATION.md            # Monorepo technical overview
 ```
+
+### artwork-validator-web — critical invariants
+
+- **Parity with Python**: `src/core/` must behave exactly like `artwork_validator/core/`. Regenerate vectors with `python3 artwork_validator/scripts/gen_parity_vectors.py` and run `npm test` after touching either side. Comments marked `PARITY:` reproduce Python bugs ON PURPOSE (enhanced-validator duplicate allowance for rows ≥ 2; cross-row token position never advancing) — do not fix them unilaterally.
+- The Excel column `DECRIPTION` is **intentionally misspelled** (real briefs use it).
+- Basecamp and OCR are excluded from the web port; PDFs with < 50 extractable chars get `needsManualReview` (extension point: `TextRecoveryProvider`; the AI panel is the practical fallback).
+- Build must stay single-file and `file://`-compatible: no lazy `import()`, pdf.js worker inlined via `?worker&inline`.
+- E2E: `npm run build && python3 scripts/gen_fixtures.py && node scripts/e2e.mjs` (uses `/opt/pw-browsers/chromium`).
+- **Brands are JSON definitions** (`src/core/brandConfigs/brandSchema.ts`, `BrandDefinition` schema v1): built-ins MNY/ESSIE in `builtinBrands.ts`, custom brands in localStorage `avw:brands` via `src/lib/brandStore.ts`, created through the wizard (`src/ui/BrandWizard.tsx`), JSON import, or AI generation. Never hardcode a new brand as a class — add a definition. The internal-GPT companion prompt lives in `artwork-validator-web/docs/COMPAGNON_PROMPT.md` and embeds this schema: update it whenever the schema or the UI wording changes.
+- **AI layer** (`src/lib/ai/`): provider-agnostic (Anthropic Messages / OpenAI chat-completions), settings in localStorage `avw:ai:settings`, key never leaves the browser. `aiValidator.ts` returns rule-engine-shaped verdicts; `brandGenerator.ts` outputs `BrandDefinition` validated by `validateBrandDefinition`.
 
 ## Core Architecture
 
@@ -62,18 +75,16 @@ All versions use an 8-character prefix matching system:
 2. **Preprocessing**:
    - Resize to common dimensions (800x800 max)
    - Convert to grayscale
-   - Optional: Crop margins (STANDALONE_EXE only, default 5%)
+   - Optional: Crop margins / content detection (desktop v3)
 3. **Similarity Calculation**: Use scikit-image SSIM on grayscale arrays
 4. **Scoring**: Convert SSIM index to 0-100 percentage scale
 
-### Key Dependencies
+### Key Dependencies (SSIM tools)
 - **PyMuPDF (fitz)**: PDF rendering
 - **Pillow (PIL)**: Image manipulation
 - **scikit-image**: SSIM calculation
 - **NumPy**: Array operations
-- **Flask**: Web interface (PROOFREADING_WEB only)
-- **tkinterdnd2**: Drag-and-drop (STANDALONE_EXE only)
-- **NOTE**: `cv2` (opencv-python) and `imagehash` were removed as they were not used
+- **tkinterdnd2**: Drag-and-drop (desktop tool only)
 
 ## Development Commands
 
@@ -108,75 +119,48 @@ gcloud builds submit --config cloudbuild.yaml --project=proofslab-3f8fe
 - Backend (Cloud Run secrets):
   - `FIREBASE_SERVICE_ACCOUNT` - Firebase Admin SDK credentials (JSON string)
 
-### PROOFREADING_WEB (Legacy Flask Web App)
-
-**Install dependencies:**
-```bash
-cd PROOFREADING/PROOFREADING_WEB
-pip install -r requirements.txt
-```
-
-**Run development server:**
-```bash
-python app.py
-```
-Server starts on http://127.0.0.1:5000
-
-**Build portable executable:**
-```bash
-python build_portable.py
-```
-Creates `dist/LorealProofreading/LorealProofreading.exe` with bundled templates and static files.
-
-**Run portable launcher (development):**
-```bash
-python launcher.py
-```
-Finds free port, starts server, opens browser automatically.
-
-### STANDALONE_EXE (Tkinter Desktop)
-
-**Install dependencies:**
-```bash
-cd PROOFREADING/STANDALONE_EXE
-pip install -r requirements.txt
-```
+### PROOFREADING (Tkinter Desktop)
 
 **Run application:**
 ```bash
-python printer_proofreading.py
+pip install -r requirements.txt
+cd PROOFREADING
+python proofreading_v3.py
 ```
 
 **Build executable:**
 ```bash
 cd PROOFREADING
-pyinstaller PrinterProofreading.spec
+pyinstaller PrinterProofreading_v3.spec
 ```
-Creates `dist/PrinterProofreading.exe` (single-file, no console, with icon).
+Creates a single-file Windows executable (no console, with icon).
 
-### Legacy Versions
+Legacy v1/v2 live in `PROOFREADING/legacy/` (run `python legacy/proofreading_v2.py` if ever needed).
 
-**Run legacy Tkinter app:**
+### artwork_validator (PyQt6 Desktop)
+
 ```bash
-cd PROOFREADING
-python proofreading_v2.py
+cd artwork_validator
+pip install PyQt6 pandas openpyxl PyMuPDF   # + selenium / paddleocr for optional features
+python main.py
+```
+
+### artwork-validator-web (Vite + React + TS)
+
+```bash
+cd artwork-validator-web
+npm install
+npm run dev        # dev server
+npm test           # vitest unit + Python-parity suite
+npm run build      # single self-contained dist/index.html
+# E2E: python3 scripts/gen_fixtures.py && node scripts/e2e.mjs
 ```
 
 ## Key Implementation Details
 
-### PROOFREADING_WEB Specifics
-- **Upload handling**: Supports both ZIP files and individual PDFs
-- **Filename preservation**: Original filenames are preserved (no secure_filename sanitization) to maintain code matching integrity
-- **Temporary storage**: Uses `static/uploads/` (dev) or `%USERPROFILE%\ProofreadingUploads` (portable)
-- **Auto-approval threshold**: Configurable (default 95%), files above threshold auto-approved
-- **Export format**: CSV with filename, code, score, status columns
-- **Port handling**: launcher.py automatically finds free port to avoid conflicts
-- **Interface**: Side-by-side image comparison with navigation buttons (similar to Tkinter version)
-- **Complete file processing**: Handles both matched pairs AND unmatched files from either folder
-
-### STANDALONE_EXE Specifics
+### PROOFREADING v3 (desktop) Specifics
 - **Drag-and-drop**: Uses tkinterdnd2 for folder selection
-- **Crop mode**: Optional margin removal (default 5%) to ignore borders/bleeds
+- **Content detection**: automatic crop of margins/bleeds/crop marks, manual adjustment
 - **Adjustable threshold**: User can set similarity threshold (default 85%)
 - **Manual review**: Side-by-side comparison with approve/reject workflow
 - **CSV export**: Includes timestamp and user decisions
@@ -350,9 +334,10 @@ gcloud secrets create firebase-service-account \
 
 ## Version Information
 
-- **proofreading-web**: v1.4.0 (frontend) / v2.3.0 (backend API)
-- **STANDALONE_EXE**: v1.0.0 (hardcoded in printer_proofreading.py)
-- **PROOFREADING_WEB (legacy)**: No explicit version tracking
+- **proofreading-web**: package.json 1.2.0 (frontend) / main.py docstring 2.2.0 (backend API)
+- **PROOFREADING**: v3 (proofreading_v3.py)
+- **artwork_validator**: v2.1 (desktop, see PROJECT_ROADMAP.md)
+- **artwork-validator-web**: v1.0.0
 
 ## Security Audit (February 2026)
 
