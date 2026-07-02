@@ -13,7 +13,21 @@ leave the user's machine.
 > The UI is intentionally in **French** (it targets French-speaking
 > colleagues); code and docs are in English.
 
-## Quick start
+## Using the app (no npm / Node / install required)
+
+The application is the single HTML file **[`release/LithoValidator.html`](release/LithoValidator.html)**,
+committed here so locked-down work machines can get it straight from GitHub:
+
+1. Open the file on GitHub → click the **⬇ Download raw file** button
+   (top-right of the file view).
+2. Double-click the downloaded `LithoValidator.html` — it opens in
+   Chrome/Edge and works fully offline. No admin rights, no installation.
+
+npm is only needed to **develop** the app (below). After a code change, run
+`npm run build` and refresh `release/LithoValidator.html` with the new
+`dist/index.html`.
+
+## Development quick start
 
 ```bash
 npm install

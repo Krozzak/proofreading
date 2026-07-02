@@ -8,6 +8,9 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteSingleFile()],
   build: {
+    // Transpile syntax down for older corporate browsers (APIs are handled by
+    // the small polyfill block in index.html).
+    target: 'es2019',
     assetsInlineLimit: 100_000_000,
     cssCodeSplit: false,
     chunkSizeWarningLimit: 10_000,

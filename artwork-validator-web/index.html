@@ -4,9 +4,101 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>L'Oréal Litho Validator</title>
+    <script>
+      // ES5 boot diagnostics: on locked-down machines a blank page tells the
+      // user nothing — surface startup errors and a troubleshooting panel.
+      (function () {
+        var booted = false
+        var firstError = null
+        window.__avwMarkBooted = function () {
+          booted = true
+          var panel = document.getElementById('avw-diagnostic')
+          if (panel && panel.parentNode) panel.parentNode.removeChild(panel)
+        }
+        function showPanel() {
+          if (booted) return
+          var boot = document.getElementById('avw-boot')
+          if (boot) boot.style.display = 'none'
+          if (document.getElementById('avw-diagnostic')) return
+          var div = document.createElement('div')
+          div.id = 'avw-diagnostic'
+          div.setAttribute(
+            'style',
+            'max-width:640px;margin:48px auto;padding:24px;font-family:Segoe UI,Arial,sans-serif;' +
+              'border:2px solid #dc2626;border-radius:12px;background:#fff;color:#111;line-height:1.5'
+          )
+          div.innerHTML =
+            '<h2 style="margin:0 0 8px;color:#dc2626">⚠️ L\'application n\'a pas pu démarrer</h2>' +
+            (firstError
+              ? '<p style="font-family:monospace;font-size:12px;background:#fef2f2;padding:8px;border-radius:6px;word-break:break-word">' +
+                firstError +
+                '</p>'
+              : '') +
+            '<p><strong>Vérifications rapides :</strong></p>' +
+            '<ol style="padding-left:20px;margin:0 0 12px">' +
+            '<li>Le fichier fait-il environ <strong>3 Mo</strong> ? (clic droit → Propriétés). Beaucoup plus petit = téléchargement incomplet : re-télécharger via le bouton « Download raw file » de GitHub.</li>' +
+            '<li>Ouvrir avec <strong>Chrome ou Edge récent</strong> (clic droit → Ouvrir avec). Dans Edge, vérifier que la page n\'est PAS en « mode Internet Explorer » (icône IE dans la barre d\'adresse).</li>' +
+            '<li>Version du navigateur : taper <code>edge://version</code> ou <code>chrome://version</code> — il faut une version 100 ou plus.</li>' +
+            '<li>Si le fichier vient d\'internet, Windows peut le bloquer : clic droit → Propriétés → cocher <strong>« Débloquer »</strong> puis rouvrir.</li>' +
+            '<li>Essayer depuis le disque local (Documents) plutôt qu\'un lecteur réseau.</li>' +
+            '</ol>' +
+            '<p style="font-size:12px;color:#666">Navigateur détecté : ' +
+            (navigator.userAgent || 'inconnu') +
+            '</p>' +
+            '<p style="font-size:12px;color:#666">Si le problème persiste, envoyez une capture de cet écran (et de la console F12) à l\'équipe outil.</p>'
+          document.body.appendChild(div)
+        }
+        window.addEventListener('error', function (e) {
+          if (!firstError && e && (e.message || e.error)) {
+            firstError = String(e.message || e.error)
+            if (!booted) showPanel()
+          }
+        })
+        window.addEventListener('unhandledrejection', function (e) {
+          if (!firstError && e && e.reason) {
+            firstError = String(e.reason)
+          }
+        })
+        setTimeout(showPanel, 5000)
+
+        // Minimal polyfill for older engines (String.replaceAll is ES2021)
+        if (!String.prototype.replaceAll) {
+          String.prototype.replaceAll = function (search, replacement) {
+            if (
+              typeof search === 'object' &&
+              search !== null &&
+              typeof search.flags === 'string'
+            ) {
+              return this.replace(search, replacement)
+            }
+            return this.split(String(search)).join(String(replacement))
+          }
+        }
+      })()
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <noscript>
+      <div style="max-width: 640px; margin: 48px auto; font-family: sans-serif">
+        ⚠️ JavaScript est désactivé dans ce navigateur — L'Oréal Litho Validator en a besoin pour
+        fonctionner. Contactez votre support IT ou essayez un autre navigateur (Chrome/Edge).
+      </div>
+    </noscript>
+    <div id="root">
+      <div
+        id="avw-boot"
+        style="
+          display: flex;
+          height: 100vh;
+          align-items: center;
+          justify-content: center;
+          font-family: 'Segoe UI', Arial, sans-serif;
+          color: #666;
+        "
+      >
+        Chargement de L'Oréal Litho Validator…
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
