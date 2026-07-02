@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-neutral-100 text-neutral-900 antialiased;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}

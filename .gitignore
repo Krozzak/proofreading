@@ -172,3 +172,4 @@ tmp/
 
 # Claude Code
 .claude/
+artwork-validator-web/*.tsbuildinfo
