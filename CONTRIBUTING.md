@@ -1,10 +1,13 @@
-# Contributing to Printer Proofreading
+# Contributing
 
-Thank you for your interest in contributing to Printer Proofreading! This document provides guidelines and information for contributors.
+Thank you for your interest in contributing! This repository is a monorepo —
+see [README.md](README.md) for the project map. These guidelines apply to all
+projects; project-specific commands are listed below.
 
 ## Code of Conduct
 
-By participating in this project, you agree to maintain a respectful and inclusive environment for everyone.
+By participating in this project, you agree to maintain a respectful and
+inclusive environment for everyone.
 
 ## How to Contribute
 
@@ -12,106 +15,91 @@ By participating in this project, you agree to maintain a respectful and inclusi
 
 1. **Check existing issues** to avoid duplicates
 2. **Create a new issue** with:
-   - Clear, descriptive title
-   - Steps to reproduce the bug
-   - Expected vs actual behavior
-   - Your environment (OS, Python version)
-   - Screenshots if applicable
-   - Sample files (if possible, anonymized)
+   - Clear, descriptive title and the **project concerned** (`proofreading-web`,
+     `PROOFREADING`, `artwork_validator`, `artwork-validator-web`)
+   - Steps to reproduce, expected vs actual behavior
+   - Your environment (OS, Python/Node version, browser for the web apps)
+   - Screenshots and anonymized sample files if applicable
 
 ### Suggesting Features
 
-1. **Check existing feature requests**
-2. **Create a new issue** with:
-   - Clear description of the feature
-   - Use case / problem it solves
-   - Proposed implementation (optional)
-   - Mockups if applicable
+Create an issue describing the feature, the use case it solves, and (optional)
+a proposed implementation or mockups.
 
-### Submitting Code
+## Development Setup
 
-#### Setup Development Environment
+### Python projects (`PROOFREADING/`, `artwork_validator/`)
 
 ```bash
-# Fork and clone the repository
-git clone https://github.com/YOUR_USERNAME/printer-proofreading.git
-cd printer-proofreading
-
-# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+source venv/bin/activate            # or venv\Scripts\activate on Windows
 
-# Install dependencies
+# Desktop proofreading tool
 pip install -r requirements.txt
+cd PROOFREADING && python proofreading_v3.py
 
-# Install development dependencies
-pip install pytest black flake8
+# Artwork validator (desktop)
+pip install PyQt6 pandas openpyxl PyMuPDF
+cd artwork_validator && python main.py
+
+# Formatting / linting
+pip install black flake8
+black <changed files> && flake8 <changed files>
 ```
 
-#### Development Workflow
+### proofreading-web (Next.js + FastAPI)
 
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+```bash
+cd proofreading-web
+npm install
+npm run dev                          # frontend on :3000
+npm run lint && npm run build        # must pass before a PR
 
-2. **Make your changes**
-   - Follow the existing code style
-   - Add comments for complex logic
-   - Update documentation if needed
+cd backend
+pip install -r requirements.txt
+python main.py                       # API on :8000
+```
 
-3. **Test your changes**
-   ```bash
-   # Run the application
-   cd PROOFREADING
-   python proofreading_v3.py
+### artwork-validator-web (Vite + React + TypeScript)
 
-   # Test with various PDF files
-   # Verify multi-page support
-   # Check edge cases
-   ```
+```bash
+cd artwork-validator-web
+npm install
+npm run dev                          # dev server
+npm test                             # vitest — unit + Python-parity suite
+npm run build                        # must emit a working single dist/index.html
+```
 
-4. **Format your code**
-   ```bash
-   black PROOFREADING/proofreading_v3.py
-   flake8 PROOFREADING/proofreading_v3.py
-   ```
+**Parity rule**: `src/core/` must stay behaviorally identical to
+`artwork_validator/core/`. If you change validation logic on either side,
+regenerate the vectors and keep the suite green:
 
-5. **Commit your changes**
-   ```bash
-   git add .
-   git commit -m "feat: add description of your feature"
-   ```
+```bash
+python3 artwork_validator/scripts/gen_parity_vectors.py
+cd artwork-validator-web && npm test
+```
 
-6. **Push and create a Pull Request**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
+Comments marked `PARITY:` flag Python quirks reproduced on purpose — do not
+"fix" them unilaterally on the web side.
+
+## Development Workflow
+
+1. Create a feature branch: `git checkout -b feature/your-feature-name`
+2. Make your changes (follow the existing code style of the project you touch)
+3. Test: run the relevant app + test suite from the setup section above
+4. Commit using conventional commits and open a Pull Request
 
 ### Commit Message Format
 
-Use conventional commits format:
-
 ```
 type(scope): description
-
-[optional body]
-
-[optional footer]
 ```
 
-Types:
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation only
-- `style`: Code style (formatting, no logic change)
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance tasks
-
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
 Examples:
+
 ```
-feat(detection): add edge-based content detection for white designs
+feat(artwork-web): add ESSIE strip-type badge to overview cards
 fix(pdf): handle corrupted PDF files gracefully
 docs(readme): update installation instructions
 ```
@@ -120,86 +108,40 @@ docs(readme): update installation instructions
 
 ### Python
 
-- Follow PEP 8
-- Use type hints where helpful
-- Maximum line length: 100 characters
-- Use descriptive variable names
-- Add docstrings for public methods
+- PEP 8, type hints where helpful, max line length 100
+- Docstrings for public methods; comment the "why", not the "what"
 
-```python
-def calculate_similarity(self, img1: Image, img2: Image) -> float:
-    """
-    Calculate SSIM similarity between two images.
+### TypeScript / React
 
-    Args:
-        img1: Original design image
-        img2: Printer proof image
+- Strict TypeScript (`tsc -b` must pass with no errors)
+- Functional components, hooks, Zustand for shared state
+- Tailwind for styling; French copy in the UI, English in code
 
-    Returns:
-        Similarity score between 0.0 and 1.0
+## Testing Checklists
 
-    Raises:
-        ValueError: If images are None or empty
-    """
-```
+### Desktop proofreading tool
 
-### GUI Code
+- [ ] Application starts without errors; folder selection works
+- [ ] Multi-page PDFs navigate properly; content detection overlay shows
+- [ ] Validation updates the list; CSV export contains correct data
 
-- Use descriptive widget names (`self.approve_button`, not `self.btn1`)
-- Group related UI elements in frames
-- Use constants for colors and fonts
-- Support keyboard navigation where possible
+### artwork-validator-web
 
-### Comments
+- [ ] `npm test` green (including parity suite)
+- [ ] `npm run build` then open `dist/index.html` via `file://` — loads with
+      no console errors
+- [ ] Optional full E2E: `python3 scripts/gen_fixtures.py && node scripts/e2e.mjs`
 
-- Comment the "why", not the "what"
-- Keep comments up to date with code changes
-- Use TODO comments for future work: `# TODO: implement batch mode`
+### proofreading-web
 
-## Testing
-
-### Manual Testing Checklist
-
-Before submitting a PR, verify:
-
-- [ ] Application starts without errors
-- [ ] Folder selection works (drag-drop and browse)
-- [ ] PDF files load correctly
-- [ ] Multi-page PDFs navigate properly
-- [ ] Content detection shows overlay
-- [ ] Manual crop adjustment works
-- [ ] Validation updates the list correctly
-- [ ] CSV export contains correct data
-- [ ] All pages must be validated before moving to next PDF
-
-### Test Files
-
-If your change affects PDF handling or comparison:
-1. Test with single-page PDFs
-2. Test with multi-page PDFs (2-5 pages)
-3. Test with mismatched page counts
-4. Test with "Original only" and "Printer only" scenarios
-5. Test with white-on-white designs
+- [ ] `npm run lint` and `npm run build` pass
+- [ ] Auth, compare and quota flows still work locally
 
 ## Documentation
 
-- Update README.md for user-facing changes
-- Update docs/DOCUMENTATION.md for technical changes
-- Add inline documentation for new functions
-- Include examples where helpful
+- Update `README.md` (root or project) for user-facing changes
+- Update `docs/DOCUMENTATION.md` for cross-project technical changes
 
 ## Questions?
 
-Feel free to:
-- Open an issue for questions
-- Start a discussion in GitHub Discussions
-- Reach out to maintainers
-
-## Recognition
-
-Contributors will be recognized in:
-- The project README
-- Release notes
-- Our appreciation!
-
-Thank you for contributing!
+Open an issue or start a discussion. Thank you for contributing!
