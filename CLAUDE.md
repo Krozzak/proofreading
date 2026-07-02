@@ -52,9 +52,11 @@ proofreading/
 
 - **Parity with Python**: `src/core/` must behave exactly like `artwork_validator/core/`. Regenerate vectors with `python3 artwork_validator/scripts/gen_parity_vectors.py` and run `npm test` after touching either side. Comments marked `PARITY:` reproduce Python bugs ON PURPOSE (enhanced-validator duplicate allowance for rows ≥ 2; cross-row token position never advancing) — do not fix them unilaterally.
 - The Excel column `DECRIPTION` is **intentionally misspelled** (real briefs use it).
-- Basecamp and OCR are excluded from the web port; PDFs with < 50 extractable chars get `needsManualReview` (extension point: `TextRecoveryProvider`).
+- Basecamp and OCR are excluded from the web port; PDFs with < 50 extractable chars get `needsManualReview` (extension point: `TextRecoveryProvider`; the AI panel is the practical fallback).
 - Build must stay single-file and `file://`-compatible: no lazy `import()`, pdf.js worker inlined via `?worker&inline`.
 - E2E: `npm run build && python3 scripts/gen_fixtures.py && node scripts/e2e.mjs` (uses `/opt/pw-browsers/chromium`).
+- **Brands are JSON definitions** (`src/core/brandConfigs/brandSchema.ts`, `BrandDefinition` schema v1): built-ins MNY/ESSIE in `builtinBrands.ts`, custom brands in localStorage `avw:brands` via `src/lib/brandStore.ts`, created through the wizard (`src/ui/BrandWizard.tsx`), JSON import, or AI generation. Never hardcode a new brand as a class — add a definition. The internal-GPT companion prompt lives in `artwork-validator-web/docs/COMPAGNON_PROMPT.md` and embeds this schema: update it whenever the schema or the UI wording changes.
+- **AI layer** (`src/lib/ai/`): provider-agnostic (Anthropic Messages / OpenAI chat-completions), settings in localStorage `avw:ai:settings`, key never leaves the browser. `aiValidator.ts` returns rule-engine-shaped verdicts; `brandGenerator.ts` outputs `BrandDefinition` validated by `validateBrandDefinition`.
 
 ## Core Architecture
 

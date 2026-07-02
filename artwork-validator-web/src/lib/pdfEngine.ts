@@ -86,6 +86,36 @@ export async function extractPdfText(data: ArrayBuffer): Promise<PdfDocumentInfo
 }
 
 /**
+ * Renders one page (1-based) to a JPEG base64 string (no data: prefix),
+ * capped at maxDim on the longest side — the input format for AI vision.
+ */
+export async function renderPdfPageToJpeg(
+  data: ArrayBuffer,
+  pageNumber: number,
+  maxDim = 1568,
+): Promise<string> {
+  const doc = await loadDocument(data)
+  try {
+    const page = await doc.getPage(pageNumber)
+    const base = page.getViewport({ scale: 1 })
+    const scale = Math.min(maxDim / Math.max(base.width, base.height), 4)
+    const viewport = page.getViewport({ scale })
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.ceil(viewport.width)
+    canvas.height = Math.ceil(viewport.height)
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    await page.render({ canvasContext: ctx, viewport }).promise
+    page.cleanup()
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    return dataUrl.slice(dataUrl.indexOf(',') + 1)
+  } finally {
+    await doc.destroy()
+  }
+}
+
+/**
  * Renders one page (1-based) onto a canvas at the given scale.
  * Used for the litho viewer and overview thumbnails.
  */

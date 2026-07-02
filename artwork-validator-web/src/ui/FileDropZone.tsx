@@ -2,6 +2,8 @@
 // brief (drag-and-drop + folder picker + multi-file picker).
 import { useRef, useState, type DragEvent } from 'react'
 import { readBrief } from '../lib/excelIO'
+import { getDefinition } from '../core/brandConfigs'
+import { downloadTemplate } from '../lib/templateGenerator'
 import { useAppStore } from '../state/appStore'
 import { toast } from './toast'
 
@@ -50,7 +52,16 @@ export function FileDropZone() {
   const session = useAppStore((s) => s.session)
   const sessionRestored = useAppStore((s) => s.sessionRestored)
   const setView = useAppStore((s) => s.setView)
+  const brandCode = useAppStore((s) => s.brandCode)
+  const brandName = useAppStore((s) => s.brandConfig.getBrandDisplayName())
   const bothReady = pdfCount > 0 && Boolean(excelReport?.is_valid)
+
+  function onDownloadTemplate() {
+    const def = getDefinition(brandCode)
+    if (def) {
+      void downloadTemplate(def).then(() => toast('Template Excel téléchargé', 'success'))
+    }
+  }
 
   const folderInputRef = useRef<HTMLInputElement>(null)
   const filesInputRef = useRef<HTMLInputElement>(null)
@@ -106,6 +117,22 @@ export function FileDropZone() {
           {session.excel_file ? ` (« ${session.excel_file} »)` : ''} pour continuer.
         </div>
       )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm">
+        <span>
+          Marque active : <strong>{brandName}</strong>
+          <span className="ml-2 text-xs text-neutral-500">
+            (changez-la en haut à droite, ou créez-en une dans Paramètres → Marques)
+          </span>
+        </span>
+        <button
+          onClick={onDownloadTemplate}
+          className="rounded border border-neutral-300 px-2.5 py-1 text-xs hover:bg-neutral-100"
+          title="Classeur Excel avec les en-têtes attendus et une feuille d'instructions"
+        >
+          📄 Télécharger le template Excel {brandCode}
+        </button>
+      </div>
 
       <div className="flex flex-col gap-4 md:flex-row">
         <div

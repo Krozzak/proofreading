@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useAppStore } from '../state/appStore'
 import { clearLocalStorage } from '../lib/sessionStore'
 import { exportSession, importSessionFromFile } from './sessionActions'
+import { BrandManager } from './BrandManager'
+import { AiSettingsSection } from './AiSettingsSection'
 import { toast } from './toast'
 import { useRef } from 'react'
 
@@ -19,12 +21,16 @@ export function SettingsView() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4 p-4">
+      <BrandManager />
+
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
         <h2 className="mb-2 font-bold">Règles de validation — {brandConfig.getBrandDisplayName()}</h2>
         <pre className="whitespace-pre-wrap rounded bg-neutral-50 p-3 text-xs text-neutral-700">
           {brandConfig.getValidationDescription()}
         </pre>
       </section>
+
+      <AiSettingsSection />
 
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
         <h2 className="mb-2 font-bold">Réponses rapides personnalisées</h2>

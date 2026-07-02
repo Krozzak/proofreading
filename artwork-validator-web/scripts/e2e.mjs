@@ -26,6 +26,11 @@ function check(label, ok) {
 
 await page.goto('file://' + join(root, 'dist', 'index.html'))
 
+// 0. First visit: the onboarding tour must show — dismiss it
+await page.waitForSelector('text=Choisissez votre marque', { timeout: 10000 })
+check('onboarding tour shows on first visit', true)
+await page.locator('button:has-text("Passer")').click()
+
 // 1. Load PDFs via the hidden multi-file input
 const pdfInput = page.locator('input[type=file][accept=".pdf"]')
 await pdfInput.setInputFiles([
@@ -102,6 +107,54 @@ await page.locator('select').first().selectOption('ESSIE')
 await page.waitForTimeout(500)
 const bodyText = await page.textContent('body')
 check('brand switch to ESSIE invalidates MNY files', bodyText.includes('format de nom invalide'))
+
+// ===== v1.1: brand wizard, JSON brands, template download =====
+
+// 13. Create a custom NYX brand through the wizard
+await page.keyboard.press('Control+3') // Paramètres
+await page.waitForSelector('text=Nouvelle marque')
+await page.locator('button:has-text("+ Nouvelle marque")').click()
+await page.locator('input[placeholder="NYX, OAP, GARNIER…"]').fill('NYX')
+await page.locator('input[placeholder="NYX Professional Makeup"]').fill('NYX Professional Makeup')
+await page.locator('button:has-text("Suivant →")').click()
+// Step 2: prefix rule + live filename test
+await page.locator('input[placeholder="YCA"]').fill('NYX')
+await page.locator('input[type="number"]').fill('6')
+await page.locator('textarea[placeholder*="Un nom de fichier par ligne"]').fill('NYX123456_v2.pdf\nmauvais_nom.pdf')
+await page.waitForTimeout(300)
+const wizardBody = await page.textContent('body')
+check('wizard live-test validates NYX123456_v2.pdf', wizardBody.includes('code NYX123456'))
+await page.locator('button:has-text("Suivant →")').click() // columns
+await page.locator('button:has-text("Suivant →")').click() // options
+await page.locator('button:has-text("Suivant →")').click() // recap
+await page.waitForSelector('text=Définition valide')
+check('wizard recap shows a valid definition', true)
+await page.locator('button:has-text("💾 Enregistrer la marque")').click()
+await page.waitForTimeout(400)
+check('NYX appears in the brand list', (await page.locator('text=NYX Professional Makeup').count()) >= 1)
+
+// 14. The new brand is selectable in the header and validates NYX filenames
+const headerOptions = await page.locator('header select option').allTextContents()
+check('header brand select contains NYX', headerOptions.some((o) => o.includes('NYX')))
+
+// 15. Download the Excel template for the custom brand
+const nyxCard = page
+  .locator('div.rounded-lg.border')
+  .filter({ hasText: 'NYX Professional Makeup' })
+  .first()
+const templateDl = page.waitForEvent('download', { timeout: 15000 })
+await nyxCard.locator('button:has-text("📄 Template Excel")').click()
+const template = await templateDl
+check(`brand template downloads (${template.suggestedFilename()})`, template.suggestedFilename().includes('NYX'))
+
+// 16. Export the brand JSON
+const brandJsonDl = page.waitForEvent('download', { timeout: 15000 })
+await nyxCard.locator('button:has-text("⬇ JSON")').click()
+const brandJson = await brandJsonDl
+check('brand JSON exports', brandJson.suggestedFilename() === 'brand_NYX.json')
+
+// 17. AI settings section is present (no network test without a key)
+check('AI settings section present', (await page.locator('text=Intelligence artificielle').count()) >= 1)
 
 check('no console/page errors', errors.length === 0)
 if (errors.length) console.log('ERRORS:', errors)

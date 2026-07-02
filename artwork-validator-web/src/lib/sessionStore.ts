@@ -48,7 +48,12 @@ export function validateAndMigrateSession(sessionData: Record<string, unknown>):
   }
 
   const method = sessionData['validation_method']
+  const customBrand =
+    typeof sessionData['custom_brand'] === 'object' && sessionData['custom_brand'] !== null
+      ? sessionData['custom_brand']
+      : undefined
   return {
+    ...(customBrand !== undefined ? { custom_brand: customBrand } : {}),
     session_name: str('session_name', 'Session sans nom'),
     pdf_folder: str('pdf_folder', ''),
     excel_file: str('excel_file', ''),

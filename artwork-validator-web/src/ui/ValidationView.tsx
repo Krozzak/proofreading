@@ -10,6 +10,7 @@ import { getLithoStatus } from '../lib/sessionStore'
 import type { LegacyEntryResult } from '../core/validator'
 import { isCubbyResult } from '../core/validator'
 import { lithoCodesOf, useAppStore, validateLitho } from '../state/appStore'
+import { AiPanel } from './AiPanel'
 import { CubbyMatrix } from './CubbyMatrix'
 import { PdfCanvas } from './PdfCanvas'
 import { ResultsTable } from './ResultsTable'
@@ -359,7 +360,7 @@ export function ValidationView() {
             )}
           </div>
 
-          <div className="overflow-auto rounded-xl border border-neutral-200 bg-white p-3">
+          <div className="flex flex-col gap-3 overflow-auto rounded-xl border border-neutral-200 bg-white p-3">
             {excelData.length === 0 ? (
               <div className="py-8 text-center text-sm text-neutral-400">
                 Aucune donnée Excel pour <span className="font-mono">{currentCode}</span>
@@ -369,6 +370,9 @@ export function ValidationView() {
               <CubbyMatrix result={cubby} />
             ) : (
               <ResultsTable excelData={excelData} results={rowResults} />
+            )}
+            {entry && excelData.length > 0 && !cubby && (
+              <AiPanel entry={entry} excelData={excelData} />
             )}
           </div>
         </div>

@@ -19,6 +19,8 @@ import {
   saveToLocalStorage,
   updateLithoStatus,
 } from '../lib/sessionStore'
+import { hydrateCustomBrands, saveCustomBrand } from '../lib/brandStore'
+import { validateBrandDefinition } from '../core/brandConfigs'
 import { extractPdfText } from '../lib/pdfEngine'
 
 export type ViewName = 'overview' | 'validation' | 'settings' | 'files'
@@ -69,6 +71,14 @@ interface AppState {
 
   // Quick responses (Paramètres editable defaults)
   customQuickResponses: string[]
+
+  // Bumped after brand CRUD so brand lists re-render (registry is module state)
+  brandsVersion: number
+
+  // AI validation outcomes per litho code (in-memory, not persisted)
+  aiResults: Record<string, import('../lib/ai').AiValidationOutcome>
+  setAiResult(code: string, outcome: import('../lib/ai').AiValidationOutcome): void
+  bumpBrands(): void
 
   // Actions
   setView(view: ViewName): void
@@ -144,6 +154,9 @@ function persist(session: SessionData): void {
   saveToLocalStorage(session)
 }
 
+// Custom brands must be registered before the session's brand is resolved.
+hydrateCustomBrands()
+
 const initialSession = loadFromLocalStorage()
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -171,6 +184,13 @@ export const useAppStore = create<AppState>((set, get) => ({
   dirty: false,
 
   customQuickResponses: [],
+  brandsVersion: 0,
+  aiResults: {},
+
+  setAiResult: (code, outcome) =>
+    set((s) => ({ aiResults: { ...s.aiResults, [code]: outcome } })),
+
+  bumpBrands: () => set((s) => ({ brandsVersion: s.brandsVersion + 1 })),
 
   setView: (view) => set({ view }),
 
@@ -358,6 +378,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   restoreSession: (session) => {
+    // A session exported from another machine may embed its custom brand
+    if (session.custom_brand) {
+      const { definition } = validateBrandDefinition(session.custom_brand)
+      if (definition) saveCustomBrand(definition)
+    }
     persist(session)
     set({
       session,

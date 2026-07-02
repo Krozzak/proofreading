@@ -17,6 +17,7 @@ export function Header() {
   const setView = useAppStore((s) => s.setView)
   const brandCode = useAppStore((s) => s.brandCode)
   const setBrand = useAppStore((s) => s.setBrand)
+  useAppStore((s) => s.brandsVersion) // re-render the brand list after CRUD
   const sessionName = useAppStore((s) => s.session.session_name)
   const setSessionName = useAppStore((s) => s.setSessionName)
   const importInputRef = useRef<HTMLInputElement>(null)

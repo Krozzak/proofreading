@@ -4,7 +4,7 @@ A **100% client-side** web port of the L'Oréal Litho Validator desktop app
 (`../artwork_validator/`, PyQt6). It validates lithographic artwork PDFs
 against an Excel brief: shade names/numbers, 4-DIGITS codes (Walmart), CUBBY
 matrix layouts, MIXED facings, FRAME/SPACE_SAVER rows — with per-brand rules
-(Maybelline New York, ESSIE).
+(Maybelline New York and ESSIE built in, any other brand addable without code).
 
 The build produces **one self-contained HTML file** that runs entirely in the
 browser: no server, no Python, no network calls. PDFs and Excel files never
@@ -68,12 +68,46 @@ pinned by tests, marked `PARITY:` in the code):
 2. `validate_enhanced` reads `last_token_position` at the wrong dict level, so
    the cross-row search position never advances.
 
+### Dynamic brands (v1.1)
+
+Brands are **JSON definitions**, not code (`src/core/brandConfigs/brandSchema.ts`):
+brand code/name, a filename rule (`prefix` = literal + N digits, or `regex`
+with three patterns), the brief columns (name/required/type) and validation
+flags. MNY and ESSIE are built-in definitions; users add new brands (NYX,
+L'Oréal Paris, Garnier…) three ways:
+
+1. **Wizard** (Paramètres → Marques → "+ Nouvelle marque"): guided steps with
+   a live tester — paste real filenames, see ✓/✗ and the extracted code.
+2. **JSON import**: drop a `brand_X.json` produced by a colleague or by the
+   internal GPT companion (prompt in `docs/COMPAGNON_PROMPT.md`).
+3. **AI generation**: describe the brand in the wizard; the configured AI
+   model produces the definition (validated by the same schema).
+
+Custom brands persist in localStorage, export/import as JSON, and are embedded
+in exported sessions so they travel with the work. Each brand has a
+downloadable **Excel brief template** (BRIEF sheet with the exact headers +
+French INSTRUCTIONS sheet) — Paramètres → Marques → "📄 Template Excel".
+
+### AI validation (v1.1, optional)
+
+Paramètres → Intelligence artificielle configures a **provider-agnostic**
+multimodal API (Anthropic Messages or OpenAI-compatible chat/completions —
+base URL, key and model are stored in the browser only; Anthropic works
+directly from the browser via `anthropic-dangerous-direct-browser-access`).
+Once configured, each litho gets an "🤖 Analyse IA" panel: the model receives
+the page images + the brief rows + the brand rules and returns per-row
+verdicts (same shape as the rule engines) plus an answer to an optional
+free-form check ("le logo Walmart est-il présent ?"). This is the
+recommended path for scanned/vectorized PDFs and out-of-format checks — more
+capable than the rule engines, but each call costs API credits.
+
 ### OCR / AI extension point
 
 The desktop app fell back to PaddleOCR when a PDF had fewer than 50
 extractable characters. The web app **flags** those PDFs ("⚠️ Revue manuelle
-requise") instead, and exposes a `TextRecoveryProvider` interface
-(`src/core/pdfCatalog.ts`) where a future AI/OCR API can plug in.
+requise") instead — the AI panel is suggested automatically for them — and
+exposes a `TextRecoveryProvider` interface (`src/core/pdfCatalog.ts`) where a
+dedicated OCR provider can still plug in.
 
 ### Known upstream quirks (inherited by design)
 

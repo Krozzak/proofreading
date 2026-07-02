@@ -9,6 +9,7 @@ import { OverviewView } from './ui/OverviewView'
 import { SettingsView } from './ui/SettingsView'
 import { CommandPalette } from './ui/CommandPalette'
 import { ShortcutsHelp } from './ui/ShortcutsHelp'
+import { OnboardingTour, shouldShowOnboarding } from './ui/OnboardingTour'
 import { Toaster, toast } from './ui/toast'
 import { exportSession } from './ui/sessionActions'
 import { exportValidationReport } from './ui/reportExport'
@@ -19,6 +20,7 @@ export default function App() {
   const dirty = useAppStore((s) => s.dirty)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [tourOpen, setTourOpen] = useState(shouldShowOnboarding)
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -100,18 +102,26 @@ export default function App() {
     <div className="flex h-full flex-col">
       <Header />
       <main className="min-h-0 flex-1 overflow-y-auto">
-        {!ready || view === 'files' ? (
+        {view === 'settings' ? (
+          <SettingsView />
+        ) : !ready || view === 'files' ? (
           <FileDropZone />
         ) : view === 'overview' ? (
           <OverviewView />
-        ) : view === 'settings' ? (
-          <SettingsView />
         ) : (
           <ValidationView />
         )}
       </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
       <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} />
+      <button
+        onClick={() => setTourOpen(true)}
+        className="fixed bottom-4 left-4 z-30 rounded-full bg-neutral-900 px-3 py-1.5 text-xs text-white shadow-lg hover:bg-neutral-700"
+        title="Revoir le guide de démarrage"
+      >
+        ❓ Aide
+      </button>
       <Toaster />
     </div>
   )

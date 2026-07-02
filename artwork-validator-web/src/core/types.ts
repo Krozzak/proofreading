@@ -36,4 +36,10 @@ export interface SessionData {
   validation_method: 'legacy' | 'enhanced'
   brand_code: string
   session_version: string
+  /**
+   * Snapshot of the brand definition when the session uses a custom (non
+   * built-in) brand, so an exported session is importable on another machine.
+   * Shape: BrandDefinition (validated on import).
+   */
+  custom_brand?: unknown
 }
