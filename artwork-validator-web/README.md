@@ -1,6 +1,6 @@
 # Artwork Validator — Web
 
-A **100% client-side** web port of the L'Oréal Litho Validator desktop app
+A **100% client-side** web port of the L'Oréal desktop litho validator app
 (`../artwork_validator/`, PyQt6). It validates lithographic artwork PDFs
 against an Excel brief: shade names/numbers, 4-DIGITS codes (Walmart), CUBBY
 matrix layouts, MIXED facings, FRAME/SPACE_SAVER rows — with per-brand rules
@@ -15,16 +15,16 @@ leave the user's machine.
 
 ## Using the app (no npm / Node / install required)
 
-The application is the single HTML file **[`release/LithoValidator.html`](release/LithoValidator.html)**,
+The application is the single HTML file **[`release/ArtworkValidator.html`](release/ArtworkValidator.html)**,
 committed here so locked-down work machines can get it straight from GitHub:
 
 1. Open the file on GitHub → click the **⬇ Download raw file** button
    (top-right of the file view).
-2. Double-click the downloaded `LithoValidator.html` — it opens in
+2. Double-click the downloaded `ArtworkValidator.html` — it opens in
    Chrome/Edge and works fully offline. No admin rights, no installation.
 
 npm is only needed to **develop** the app (below). After a code change, run
-`npm run build` and refresh `release/LithoValidator.html` with the new
+`npm run build` and refresh `release/ArtworkValidator.html` with the new
 `dist/index.html`.
 
 ## Development quick start

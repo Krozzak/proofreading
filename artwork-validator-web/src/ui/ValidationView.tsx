@@ -10,13 +10,16 @@ import { getLithoStatus } from '../lib/sessionStore'
 import type { LegacyEntryResult } from '../core/validator'
 import { isCubbyResult } from '../core/validator'
 import { lithoCodesOf, useAppStore, validateLitho } from '../state/appStore'
+import { checkExpectedSize, formatPageSize, sizeSourceLabel } from '../lib/dimensions'
 import { AiPanel } from './AiPanel'
 import { CubbyMatrix } from './CubbyMatrix'
+import { ExtractedTextPanel } from './ExtractedTextPanel'
 import { PdfCanvas } from './PdfCanvas'
 import { ResultsTable } from './ResultsTable'
 import { toast } from './toast'
 
 type StatusTab = 'pending' | 'rejected' | 'approved'
+type ResultsTab = 'table' | 'text'
 
 const TAB_LABELS: Record<StatusTab, string> = {
   pending: '⏳ En attente',
@@ -39,11 +42,21 @@ export function ValidationView() {
   const previousLitho = useAppStore((s) => s.previousLitho)
   const goToLitho = useAppStore((s) => s.goToLitho)
   const customQuickResponses = useAppStore((s) => s.customQuickResponses)
+  const viewerLayout = useAppStore((s) => s.viewerLayout)
+  const setViewerLayout = useAppStore((s) => s.setViewerLayout)
+  const expectedSize = useAppStore((s) => s.expectedSize)
 
   const [comment, setComment] = useState('')
   const [statusTab, setStatusTab] = useState<StatusTab>('pending')
   const [listFilter, setListFilter] = useState('')
   const [pageNumber, setPageNumber] = useState(1)
+  const [resultsTab, setResultsTab] = useState<ResultsTab>('table')
+  const [textQuery, setTextQuery] = useState('')
+
+  function inspectValue(value: string) {
+    setTextQuery(value)
+    setResultsTab('text')
+  }
 
   const codes = useMemo(() => lithoCodesOf(pdfEntries), [pdfEntries])
   const currentCode = codes[currentIndex] ?? null
@@ -74,6 +87,7 @@ export function ValidationView() {
   const processedPct = codes.length ? Math.round(((approvedCount + rejectedCount) / codes.length) * 100) : 0
 
   const currentStatus = currentCode ? getLithoStatus(session, currentCode) : null
+  const pageSizeCheck = entry?.pageSize ? checkExpectedSize(entry.pageSize, expectedSize) : null
 
   const listCodes = codes.filter((c) => {
     const st = getLithoStatus(session, c)?.status ?? 'pending'
@@ -306,6 +320,23 @@ export function ValidationView() {
                 4 DIGITS
               </label>
             )}
+            {entry?.pageSize && (
+              <span
+                className={
+                  'rounded-full px-2.5 py-0.5 text-xs font-semibold ' +
+                  (pageSizeCheck === true
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : pageSizeCheck === false
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-neutral-100 text-neutral-600')
+                }
+                title={`${sizeSourceLabel(entry.pageSize)} — taille attendue configurable dans Paramètres. Détection des lignes de coupe (dielines) à venir.`}
+              >
+                📐 {formatPageSize(entry.pageSize)}
+                {pageSizeCheck === true && ' ✓'}
+                {pageSizeCheck === false && ' ✗ taille attendue'}
+              </span>
+            )}
             {entry?.needsManualReview ? (
               <span
                 className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
@@ -318,11 +349,23 @@ export function ValidationView() {
                 📄 Texte standard
               </span>
             )}
+            <button
+              onClick={() => setViewerLayout(viewerLayout === 'side' ? 'stacked' : 'side')}
+              className="rounded border border-neutral-300 px-2 py-0.5 text-xs hover:bg-neutral-100"
+              title="Basculer la disposition visuel / tableau"
+            >
+              {viewerLayout === 'side' ? '⬍ Empiler' : '⬌ Côte à côte'}
+            </button>
           </div>
         </div>
 
-        {/* PDF + results */}
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 xl:grid-cols-2">
+        {/* PDF + results — side by side or stacked, per user preference */}
+        <div
+          className={
+            'grid min-h-0 flex-1 grid-cols-1 gap-3 ' +
+            (viewerLayout === 'side' ? 'xl:grid-cols-2' : '')
+          }
+        >
           <div className="flex flex-col rounded-xl border border-neutral-200 bg-white p-3">
             {entry && (
               <>
@@ -361,7 +404,36 @@ export function ValidationView() {
           </div>
 
           <div className="flex flex-col gap-3 overflow-auto rounded-xl border border-neutral-200 bg-white p-3">
-            {excelData.length === 0 ? (
+            <div className="flex gap-1">
+              {(
+                [
+                  ['table', '📋 Grille de validation'],
+                  ['text', '📝 Texte extrait'],
+                ] as [ResultsTab, string][]
+              ).map(([tab, label]) => (
+                <button
+                  key={tab}
+                  onClick={() => setResultsTab(tab)}
+                  className={
+                    'rounded px-3 py-1 text-xs ' +
+                    (resultsTab === tab
+                      ? 'bg-neutral-900 font-semibold text-white'
+                      : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200')
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {resultsTab === 'text' ? (
+              <ExtractedTextPanel
+                text={entry?.text ?? ''}
+                pageCount={entry?.pageCount ?? 0}
+                needsManualReview={entry?.needsManualReview ?? false}
+                query={textQuery}
+                onQueryChange={setTextQuery}
+              />
+            ) : excelData.length === 0 ? (
               <div className="py-8 text-center text-sm text-neutral-400">
                 Aucune donnée Excel pour <span className="font-mono">{currentCode}</span>
                 {rawSheet ? '' : ' — chargez le brief Excel'}
@@ -369,9 +441,9 @@ export function ValidationView() {
             ) : cubby ? (
               <CubbyMatrix result={cubby} />
             ) : (
-              <ResultsTable excelData={excelData} results={rowResults} />
+              <ResultsTable excelData={excelData} results={rowResults} onInspectValue={inspectValue} />
             )}
-            {entry && excelData.length > 0 && !cubby && (
+            {resultsTab === 'table' && entry && excelData.length > 0 && !cubby && (
               <AiPanel entry={entry} excelData={excelData} />
             )}
           </div>

@@ -26,7 +26,7 @@ export function Header() {
     <header className="flex flex-wrap items-center gap-3 border-b border-neutral-800 bg-black px-4 py-2 text-white">
       <div className="flex items-center gap-2">
         <span className="text-lg font-bold tracking-tight">
-          L'Oréal <span className="text-red-500">Litho Validator</span>
+          L'Oréal <span className="text-red-500">Artwork Validator</span>
         </span>
         <span className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wider text-neutral-400">
           Web

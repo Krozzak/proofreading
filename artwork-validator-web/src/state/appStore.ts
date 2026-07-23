@@ -21,9 +21,27 @@ import {
 } from '../lib/sessionStore'
 import { hydrateCustomBrands, saveCustomBrand } from '../lib/brandStore'
 import { validateBrandDefinition } from '../core/brandConfigs'
-import { extractPdfText } from '../lib/pdfEngine'
+import { extractPdfText, type PdfPageSize } from '../lib/pdfEngine'
+import {
+  loadExpectedSize,
+  saveExpectedSize,
+  type ExpectedSize,
+} from '../lib/dimensions'
 
 export type ViewName = 'overview' | 'validation' | 'settings' | 'files'
+
+/** Side-by-side (visual | table) or stacked (visual above table) viewer. */
+export type ViewerLayout = 'side' | 'stacked'
+
+const LAYOUT_STORAGE_KEY = 'avw:ui:layout'
+
+function loadViewerLayout(): ViewerLayout {
+  try {
+    return localStorage.getItem(LAYOUT_STORAGE_KEY) === 'stacked' ? 'stacked' : 'side'
+  } catch {
+    return 'side'
+  }
+}
 
 export interface PdfFileEntry {
   fileName: string
@@ -32,6 +50,8 @@ export interface PdfFileEntry {
   text: string
   pageCount: number
   needsManualReview: boolean
+  /** First-page size in mm (TrimBox if found, else CropBox), null if unknown. */
+  pageSize: PdfPageSize | null
 }
 
 export interface IngestProgress {
@@ -60,6 +80,8 @@ interface AppState {
   // Options
   checkDigits: boolean
   validationMethod: 'legacy' | 'enhanced'
+  viewerLayout: ViewerLayout
+  expectedSize: ExpectedSize
 
   // Navigation
   currentIndex: number
@@ -87,6 +109,8 @@ interface AppState {
   ingestPdfFiles(files: File[], folderLabel?: string): Promise<void>
   setCheckDigits(value: boolean): void
   setValidationMethod(method: 'legacy' | 'enhanced'): void
+  setViewerLayout(layout: ViewerLayout): void
+  setExpectedSize(size: ExpectedSize): void
   setCurrentIndex(index: number): void
   nextLitho(): boolean
   previousLitho(): boolean
@@ -176,6 +200,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   checkDigits: initialSession?.check_digits ?? false,
   validationMethod: initialSession?.validation_method ?? 'legacy',
+  viewerLayout: loadViewerLayout(),
+  expectedSize: loadExpectedSize(),
 
   currentIndex: initialSession?.last_litho_index ?? 0,
 
@@ -200,7 +226,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     const state = get()
     // Re-partition already-loaded PDFs with the new brand rules
     const allFiles = [
-      ...state.pdfEntries.map((e) => ({ file: e.file, text: e.text, pageCount: e.pageCount, fileName: e.fileName })),
+      ...state.pdfEntries.map((e) => ({
+        file: e.file,
+        text: e.text,
+        pageCount: e.pageCount,
+        fileName: e.fileName,
+        pageSize: e.pageSize,
+      })),
     ]
     const stillValid: PdfFileEntry[] = []
     const nowInvalid: string[] = [...state.invalidFiles]
@@ -216,6 +248,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           text: f.text,
           pageCount: f.pageCount,
           needsManualReview: f.text.trim().length < MANUAL_REVIEW_TEXT_THRESHOLD,
+          pageSize: f.pageSize,
         })
       } else if (!nowInvalid.includes(f.fileName)) {
         nowInvalid.push(f.fileName)
@@ -283,6 +316,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             text: info.text,
             pageCount: info.pageCount,
             needsManualReview: info.text.trim().length < MANUAL_REVIEW_TEXT_THRESHOLD,
+            pageSize: info.pageSize,
           })
         }
       } catch {
@@ -312,6 +346,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     const session = { ...get().session, validation_method: method }
     persist(session)
     set({ validationMethod: method, session })
+  },
+
+  setViewerLayout: (layout) => {
+    try {
+      localStorage.setItem(LAYOUT_STORAGE_KEY, layout)
+    } catch {
+      // localStorage unavailable: preference stays session-only
+    }
+    set({ viewerLayout: layout })
+  },
+
+  setExpectedSize: (size) => {
+    saveExpectedSize(size)
+    set({ expectedSize: size })
   },
 
   setCurrentIndex: (index) => {
