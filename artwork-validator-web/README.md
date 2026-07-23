@@ -162,6 +162,13 @@ The architecture already anticipates that integration:
 - `docs/COMPAGNON_PROMPT.md` already defines the GPT-side behavior — today as
   a copy-paste prompt, tomorrow as the embedded app's system instructions.
 
+**Artwork types**: today the app validates one artwork type (bullnose
+graphics — UPC-driven shelf lithos). Support for other types (hotspot
+visuals: no UPC sequence, text/typography/image checks) is designed in
+[`docs/ARTWORK_TYPES.md`](docs/ARTWORK_TYPES.md) — JSON type definitions with
+auto-detection and a per-type check registry, mirroring the dynamic-brands
+approach.
+
 Separately, a ProofsLab integration (dedicated page on proofslab.com) is
 planned as Phase 2 of the monorepo roadmap.
 
