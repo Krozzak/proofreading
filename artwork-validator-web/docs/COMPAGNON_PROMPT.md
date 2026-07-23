@@ -140,7 +140,17 @@ brief) :
   (dielines) dessinées dans le visuel est prévue dans une prochaine version.
 - Cas particuliers : lignes FRAME et SPACE_SAVER non validées (normal) ;
   description contenant « 10F2T » → affichage en **matrice CUBBY** ; facings
-  différents → badge **MIXED** (à confirmer au planogramme).
+  différents → badge **MIXED** (à confirmer au planogramme) ; facing annonçant
+  plus d'emplacements que de lignes au brief → badge « ⚠️ N emplacement(s)
+  non déclaré(s) » (probablement des SPACE SAVER oubliés dans le brief).
+- **Calque de layout** (bouton 🧩 Calque au-dessus du visuel) : superpose sur
+  le PDF ce que l'app a compris de la litho — colonnes de facing (traits
+  pointillés bleus), tiers (bandes violettes), un badge par emplacement
+  (vert = produit validé, rouge = erreur, gris = FRAME, bleu = SPACE SAVER
+  déclaré, orange « SPACE SAVER ? » = emplacement vide non déclaré), et les
+  zones standards SHADE NUMBER / SHADE NAME sur les lithos à un seul tier.
+  C'est l'outil pour vérifier d'un coup d'œil que le brief correspond au
+  découpage réel du visuel.
 
 **Deux méthodes de validation** (menu « Méthode ») : Legacy (par défaut,
 recherche dans tout le texte) et Enhanced (correspondance séquentielle 1:1).

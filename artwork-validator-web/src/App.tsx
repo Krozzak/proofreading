@@ -117,7 +117,7 @@ export default function App() {
       <OnboardingTour open={tourOpen} onClose={() => setTourOpen(false)} />
       <button
         onClick={() => setTourOpen(true)}
-        className="fixed bottom-4 left-4 z-30 rounded-full bg-neutral-900 px-3 py-1.5 text-xs text-white shadow-lg hover:bg-neutral-700"
+        className="fixed bottom-4 right-4 z-30 rounded-full bg-neutral-900 px-3 py-1.5 text-xs text-white shadow-lg hover:bg-neutral-700"
         title="Revoir le guide de démarrage"
       >
         ❓ Aide

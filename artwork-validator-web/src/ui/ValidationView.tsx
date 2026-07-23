@@ -11,9 +11,11 @@ import type { LegacyEntryResult } from '../core/validator'
 import { isCubbyResult } from '../core/validator'
 import { lithoCodesOf, useAppStore, validateLitho } from '../state/appStore'
 import { checkExpectedSize, formatPageSize, sizeSourceLabel } from '../lib/dimensions'
+import { computeLithoLayout, cubbyLayout } from '../lib/lithoLayout'
 import { AiPanel } from './AiPanel'
 import { CubbyMatrix } from './CubbyMatrix'
 import { ExtractedTextPanel } from './ExtractedTextPanel'
+import { LayoutOverlay } from './LayoutOverlay'
 import { PdfCanvas } from './PdfCanvas'
 import { ResultsTable } from './ResultsTable'
 import { toast } from './toast'
@@ -52,6 +54,25 @@ export function ValidationView() {
   const [pageNumber, setPageNumber] = useState(1)
   const [resultsTab, setResultsTab] = useState<ResultsTab>('table')
   const [textQuery, setTextQuery] = useState('')
+  const [showLayout, setShowLayout] = useState(() => {
+    try {
+      return localStorage.getItem('avw:ui:layoutOverlay') === '1'
+    } catch {
+      return false
+    }
+  })
+
+  function toggleLayout() {
+    setShowLayout((v) => {
+      const next = !v
+      try {
+        localStorage.setItem('avw:ui:layoutOverlay', next ? '1' : '0')
+      } catch {
+        // localStorage unavailable: preference stays session-only
+      }
+      return next
+    })
+  }
 
   function inspectValue(value: string) {
     setTextQuery(value)
@@ -72,6 +93,11 @@ export function ValidationView() {
 
   const cubby = results.length === 1 && isCubbyResult(results[0]) ? results[0] : null
   const rowResults = cubby ? [] : (results as LegacyEntryResult[])
+
+  const lithoLayout = useMemo(
+    () => (cubby ? cubbyLayout(cubby) : computeLithoLayout(excelData, rowResults)),
+    [cubby, excelData, rowResults],
+  )
 
   const quickResponses = useMemo(() => {
     if (cubby || !rowResults.length) return customQuickResponses
@@ -337,6 +363,15 @@ export function ValidationView() {
                 {pageSizeCheck === false && ' ✗ taille attendue'}
               </span>
             )}
+            {lithoLayout && lithoLayout.implicitGaps > 0 && (
+              <span
+                className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
+                title="Le facing annonce plus d'emplacements que de lignes au brief — probablement des SPACE SAVER non déclarés. Activez le calque 🧩 pour les visualiser."
+              >
+                ⚠️ {lithoLayout.implicitGaps} emplacement{lithoLayout.implicitGaps > 1 ? 's' : ''} non
+                déclaré{lithoLayout.implicitGaps > 1 ? 's' : ''}
+              </span>
+            )}
             {entry?.needsManualReview ? (
               <span
                 className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800"
@@ -369,11 +404,25 @@ export function ValidationView() {
           <div className="flex flex-col rounded-xl border border-neutral-200 bg-white p-3">
             {entry && (
               <>
-                <div className="mb-2 flex items-center justify-between text-sm">
+                <div className="mb-2 flex items-center justify-between gap-2 text-sm">
                   <span className="truncate text-xs text-neutral-500" title={entry.fileName}>
                     {entry.fileName}
                   </span>
                   <span className="flex items-center gap-2">
+                    {lithoLayout && (
+                      <button
+                        onClick={toggleLayout}
+                        className={
+                          'rounded border px-2 py-0.5 text-xs ' +
+                          (showLayout
+                            ? 'border-violet-600 bg-violet-600 font-semibold text-white'
+                            : 'border-neutral-300 hover:bg-neutral-100')
+                        }
+                        title="Superposer le layout compris par l'app : colonnes de facing, tiers, emplacements"
+                      >
+                        🧩 Calque
+                      </button>
+                    )}
                     <button
                       onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
                       disabled={pageNumber <= 1}
@@ -392,13 +441,29 @@ export function ValidationView() {
                   </span>
                 </div>
                 <div className="flex-1 overflow-auto rounded border border-neutral-100 bg-neutral-50 p-2">
-                  <PdfCanvas
-                    file={entry.file}
-                    pageNumber={pageNumber}
-                    maxWidth={700}
-                    className="mx-auto max-w-full shadow"
-                  />
+                  <div className="relative mx-auto w-fit">
+                    <PdfCanvas
+                      file={entry.file}
+                      pageNumber={pageNumber}
+                      maxWidth={700}
+                      className="max-w-full shadow"
+                    />
+                    {showLayout && pageNumber === 1 && lithoLayout && (
+                      <LayoutOverlay layout={lithoLayout} />
+                    )}
+                  </div>
                 </div>
+                {showLayout && pageNumber === 1 && lithoLayout && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10px] text-neutral-500">
+                    <span className="font-semibold">Calque :</span>
+                    <span className="rounded bg-emerald-600/90 px-1.5 text-white">produit ✓</span>
+                    <span className="rounded bg-red-600/95 px-1.5 text-white">erreur</span>
+                    <span className="rounded bg-neutral-600/90 px-1.5 text-white">FRAME</span>
+                    <span className="rounded bg-sky-600/90 px-1.5 text-white">SPACE SAVER</span>
+                    <span className="rounded bg-amber-500/95 px-1.5 text-white">non déclaré ?</span>
+                    <span>· colonnes = facing · lignes = tiers</span>
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -35,7 +35,7 @@ export function Toaster() {
   }, [])
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="pointer-events-none fixed bottom-14 right-4 z-50 flex flex-col gap-2">
       {items.map((item) => (
         <div
           key={item.id}
