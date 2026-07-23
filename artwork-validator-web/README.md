@@ -50,6 +50,14 @@ is fully functional under `file://`).
 No installation, no admin rights, no dependencies required on the target
 machine. Recent Chrome or Edge recommended.
 
+The official internal distribution channel is a **SharePoint direct-download
+share link** (share link + `?download=1`, or `&download=1` if the URL already
+has a query string) embedded in the GPT companion prompt
+(`docs/COMPAGNON_PROMPT.md`) — the companion hands the link to anyone who
+needs the app. After each release, replace the file in SharePoint
+("Replace" keeps the link stable) so the companion always serves the latest
+version without touching the prompt.
+
 ## How it works
 
 | Layer | Location | Notes |
