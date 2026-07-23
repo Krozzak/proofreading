@@ -119,7 +119,8 @@ await page.locator('input[placeholder="NYX Professional Makeup"]').fill('NYX Pro
 await page.locator('button:has-text("Suivant →")').click()
 // Step 2: prefix rule + live filename test
 await page.locator('input[placeholder="YCA"]').fill('NYX')
-await page.locator('input[type="number"]').fill('6')
+// max=20 pins the wizard's digit-count input (Paramètres now has other number inputs)
+await page.locator('input[type="number"][max="20"]').fill('6')
 await page.locator('textarea[placeholder*="Un nom de fichier par ligne"]').fill('NYX123456_v2.pdf\nmauvais_nom.pdf')
 await page.waitForTimeout(300)
 const wizardBody = await page.textContent('body')

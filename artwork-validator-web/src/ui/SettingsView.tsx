@@ -9,12 +9,19 @@ import { AiSettingsSection } from './AiSettingsSection'
 import { toast } from './toast'
 import { useRef } from 'react'
 
+function numOrNull(raw: string): number | null {
+  const value = Number(raw.replace(',', '.'))
+  return raw.trim() !== '' && Number.isFinite(value) && value > 0 ? value : null
+}
+
 export function SettingsView() {
   const brandConfig = useAppStore((s) => s.brandConfig)
   const customQuickResponses = useAppStore((s) => s.customQuickResponses)
   const setCustomQuickResponses = useAppStore((s) => s.setCustomQuickResponses)
   const resetSession = useAppStore((s) => s.resetSession)
   const session = useAppStore((s) => s.session)
+  const expectedSize = useAppStore((s) => s.expectedSize)
+  const setExpectedSize = useAppStore((s) => s.setExpectedSize)
 
   const [newResponse, setNewResponse] = useState('')
   const importRef = useRef<HTMLInputElement>(null)
@@ -31,6 +38,64 @@ export function SettingsView() {
       </section>
 
       <AiSettingsSection />
+
+      <section className="rounded-xl border border-neutral-200 bg-white p-4">
+        <h2 className="mb-2 font-bold">📐 Taille du visuel (bêta)</h2>
+        <p className="mb-3 text-xs text-neutral-500">
+          La taille affichée est lue dans les métadonnées du PDF : le <b>TrimBox</b> (format
+          fini après coupe) quand il est présent, sinon le <b>CropBox</b> (taille de page,
+          qui peut inclure fonds perdus et traits de coupe). La détection des lignes de
+          coupe (dielines) dessinées dans le visuel est prévue dans une prochaine version —
+          elle donnera les vraies dimensions même quand les métadonnées sont absentes.
+          Renseignez une taille attendue pour faire vérifier chaque litho (comparaison
+          indépendante de l'orientation).
+        </p>
+        <div className="flex flex-wrap items-end gap-3 text-sm">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-neutral-500">Largeur attendue (mm)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={expectedSize.widthMm ?? ''}
+              onChange={(e) => setExpectedSize({ ...expectedSize, widthMm: numOrNull(e.target.value) })}
+              placeholder="ex : 450"
+              className="w-36 rounded border border-neutral-300 px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-neutral-500">Hauteur attendue (mm)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={expectedSize.heightMm ?? ''}
+              onChange={(e) => setExpectedSize({ ...expectedSize, heightMm: numOrNull(e.target.value) })}
+              placeholder="ex : 1200"
+              className="w-36 rounded border border-neutral-300 px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-xs text-neutral-500">Tolérance (± mm)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={expectedSize.toleranceMm}
+              onChange={(e) =>
+                setExpectedSize({ ...expectedSize, toleranceMm: numOrNull(e.target.value) ?? 2 })
+              }
+              className="w-24 rounded border border-neutral-300 px-2 py-1"
+            />
+          </label>
+          <button
+            onClick={() => setExpectedSize({ widthMm: null, heightMm: null, toleranceMm: 2 })}
+            className="rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
+          >
+            Effacer
+          </button>
+        </div>
+      </section>
 
       <section className="rounded-xl border border-neutral-200 bg-white p-4">
         <h2 className="mb-2 font-bold">Réponses rapides personnalisées</h2>
@@ -130,7 +195,7 @@ export function SettingsView() {
       <section className="rounded-xl border border-neutral-200 bg-white p-4 text-xs text-neutral-500">
         <h2 className="mb-2 font-bold text-neutral-900">À propos</h2>
         <p>
-          L'Oréal Litho Validator — version web (v1.0.0). Application 100% navigateur : aucun
+          L'Oréal Artwork Validator — version web (v1.1.0). Application 100% navigateur : aucun
           fichier n'est envoyé sur un serveur, tout le traitement (extraction PDF, validation,
           rapport Excel) se fait localement. Les PDFs avec moins de 50 caractères de texte
           extractible sont marqués « Revue manuelle requise » (l'application bureau utilisait un

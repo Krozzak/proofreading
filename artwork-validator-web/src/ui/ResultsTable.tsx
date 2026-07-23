@@ -7,13 +7,34 @@ import { useAppStore } from '../state/appStore'
 interface Props {
   excelData: LithoRecord[]
   results: LegacyEntryResult[]
+  /** When set, cell values become clickable to look them up in the extracted text. */
+  onInspectValue?: (value: string) => void
 }
 
 function Check({ ok }: { ok: boolean }) {
   return ok ? <span className="text-emerald-600">✓</span> : <span className="font-bold text-red-600">✗</span>
 }
 
-export function ResultsTable({ excelData, results }: Props) {
+function InspectableValue({
+  value,
+  onInspect,
+}: {
+  value: string
+  onInspect?: (value: string) => void
+}) {
+  if (!onInspect || !value) return <>{value}</>
+  return (
+    <button
+      onClick={() => onInspect(value)}
+      className="cursor-pointer underline decoration-dotted decoration-neutral-400 underline-offset-2 hover:decoration-solid hover:decoration-neutral-700"
+      title="Chercher cette valeur dans le texte extrait du PDF"
+    >
+      {value}
+    </button>
+  )
+}
+
+export function ResultsTable({ excelData, results, onInspectValue }: Props) {
   const checkDigits = useAppStore((s) => s.checkDigits)
   const requiresDigits = useAppStore((s) => s.brandConfig.requiresDigitsValidation())
   const showDigits = checkDigits && requiresDigits
@@ -68,14 +89,17 @@ export function ResultsTable({ excelData, results }: Props) {
                     {safeStr(row['PRODUCT DESCRIPTION'])}
                   </td>
                   <td className="px-3 py-1.5">
-                    {safeStr(row['SHADE NAME'])} {!neutral && <Check ok={res.shade_name} />}
+                    <InspectableValue value={safeStr(row['SHADE NAME'])} onInspect={onInspectValue} />{' '}
+                    {!neutral && <Check ok={res.shade_name} />}
                   </td>
                   <td className="px-3 py-1.5">
-                    {safeStr(row['SHADE NUMBER'])} {!neutral && <Check ok={res.shade_number} />}
+                    <InspectableValue value={safeStr(row['SHADE NUMBER'])} onInspect={onInspectValue} />{' '}
+                    {!neutral && <Check ok={res.shade_number} />}
                   </td>
                   {showDigits && (
                     <td className="px-3 py-1.5">
-                      {safeStr(row['4 DIGITS'])} {!neutral && <Check ok={res.digits} />}
+                      <InspectableValue value={safeStr(row['4 DIGITS'])} onInspect={onInspectValue} />{' '}
+                      {!neutral && <Check ok={res.digits} />}
                     </td>
                   )}
                   <td className="px-3 py-1.5">{safeStr(res.facing)}</td>

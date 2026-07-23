@@ -5,6 +5,7 @@ import { getLithoStatus, updateLithoStatus } from '../lib/sessionStore'
 import { saveToLocalStorage } from '../lib/sessionStore'
 import { isCubbyResult } from '../core/validator'
 import { lithoCodesOf, useAppStore, validateLitho } from '../state/appStore'
+import { checkExpectedSize, formatPageSize } from '../lib/dimensions'
 import { PdfCanvas } from './PdfCanvas'
 import { toast } from './toast'
 
@@ -19,6 +20,7 @@ export function OverviewView() {
   const validationMethod = useAppStore((s) => s.validationMethod)
   const session = useAppStore((s) => s.session)
   const goToLitho = useAppStore((s) => s.goToLitho)
+  const expectedSize = useAppStore((s) => s.expectedSize)
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [search, setSearch] = useState('')
@@ -178,6 +180,21 @@ export function OverviewView() {
                 <span className="w-fit rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
                   {type}
                 </span>
+                {entry.pageSize && (
+                  <span
+                    className={
+                      'w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold ' +
+                      (checkExpectedSize(entry.pageSize, expectedSize) === false
+                        ? 'bg-red-100 text-red-700'
+                        : checkExpectedSize(entry.pageSize, expectedSize) === true
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-neutral-100 text-neutral-500')
+                    }
+                    title="Taille lue dans le PDF (TrimBox/CropBox) — détection des dielines à venir"
+                  >
+                    📐 {formatPageSize(entry.pageSize)}
+                  </span>
+                )}
                 <span className="text-xs">
                   {status === 'approved' ? '✅' : status === 'rejected' ? '❌' : '⏳'}
                 </span>

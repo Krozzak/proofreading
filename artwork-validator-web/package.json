@@ -1,9 +1,9 @@
 {
   "name": "artwork-validator-web",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
-  "description": "L'Oréal Litho Validator — 100% client-side web app (single self-contained HTML file)",
+  "description": "L'Oréal Artwork Validator — 100% client-side web app (single self-contained HTML file)",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",

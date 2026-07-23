@@ -1,6 +1,6 @@
 # Artwork Validator — Web
 
-A **100% client-side** web port of the L'Oréal Litho Validator desktop app
+A **100% client-side** web port of the L'Oréal desktop litho validator app
 (`../artwork_validator/`, PyQt6). It validates lithographic artwork PDFs
 against an Excel brief: shade names/numbers, 4-DIGITS codes (Walmart), CUBBY
 matrix layouts, MIXED facings, FRAME/SPACE_SAVER rows — with per-brand rules
@@ -15,16 +15,16 @@ leave the user's machine.
 
 ## Using the app (no npm / Node / install required)
 
-The application is the single HTML file **[`release/LithoValidator.html`](release/LithoValidator.html)**,
+The application is the single HTML file **[`release/ArtworkValidator.html`](release/ArtworkValidator.html)**,
 committed here so locked-down work machines can get it straight from GitHub:
 
 1. Open the file on GitHub → click the **⬇ Download raw file** button
    (top-right of the file view).
-2. Double-click the downloaded `LithoValidator.html` — it opens in
+2. Double-click the downloaded `ArtworkValidator.html` — it opens in
    Chrome/Edge and works fully offline. No admin rights, no installation.
 
 npm is only needed to **develop** the app (below). After a code change, run
-`npm run build` and refresh `release/LithoValidator.html` with the new
+`npm run build` and refresh `release/ArtworkValidator.html` with the new
 `dist/index.html`.
 
 ## Development quick start
@@ -161,6 +161,13 @@ The architecture already anticipates that integration:
   (`BrandDefinition`) are exactly the interfaces a host chat would drive;
 - `docs/COMPAGNON_PROMPT.md` already defines the GPT-side behavior — today as
   a copy-paste prompt, tomorrow as the embedded app's system instructions.
+
+**Artwork types**: today the app validates one artwork type (bullnose
+graphics — UPC-driven shelf lithos). Support for other types (hotspot
+visuals: no UPC sequence, text/typography/image checks) is designed in
+[`docs/ARTWORK_TYPES.md`](docs/ARTWORK_TYPES.md) — JSON type definitions with
+auto-detection and a per-type check registry, mirroring the dynamic-brands
+approach.
 
 Separately, a ProofsLab integration (dedicated page on proofslab.com) is
 planned as Phase 2 of the monorepo roadmap.

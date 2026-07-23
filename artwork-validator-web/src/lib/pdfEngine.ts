@@ -25,10 +25,47 @@ function ensureWorker(): void {
   }
 }
 
+export interface PdfPageSize {
+  widthMm: number
+  heightMm: number
+  /**
+   * 'trimbox' when a /TrimBox was found in the raw PDF (the finished cut
+   * size), 'cropbox' otherwise (page size — may include bleed/marks).
+   * True dieline (cut-line) detection is a future feature.
+   */
+  source: 'trimbox' | 'cropbox'
+}
+
 export interface PdfDocumentInfo {
   pageCount: number
   /** Concatenated text of ALL pages (mirrors the desktop PDFProcessor). */
   text: string
+  /** First-page dimensions in millimetres, null if unreadable. */
+  pageSize: PdfPageSize | null
+}
+
+const PT_TO_MM = 25.4 / 72
+
+/**
+ * Best-effort /TrimBox scan of the raw PDF bytes. pdf.js does not expose the
+ * TrimBox through its public API, but many print PDFs keep the page dict
+ * uncompressed, where the box is greppable. Returns [w, h] in points.
+ */
+function scanTrimBox(data: ArrayBuffer): [number, number] | null {
+  // Only decode up to 20 MB to bound the cost on huge files
+  const bytes = new Uint8Array(data, 0, Math.min(data.byteLength, 20_000_000))
+  let raw = ''
+  const CHUNK = 65536
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    raw += String.fromCharCode(...bytes.subarray(i, Math.min(i + CHUNK, bytes.length)))
+  }
+  const match = /\/TrimBox\s*\[\s*(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*\]/.exec(raw)
+  if (!match) return null
+  const [x1, y1, x2, y2] = match.slice(1).map(Number)
+  const w = Math.abs(x2 - x1)
+  const h = Math.abs(y2 - y1)
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null
+  return [w, h]
 }
 
 /** Ligatures and special spaces that PyMuPDF expands but pdf.js may not. */
@@ -65,10 +102,21 @@ async function loadDocument(data: ArrayBuffer) {
  * of the desktop `page.get_text()` loop over all pages.
  */
 export async function extractPdfText(data: ArrayBuffer): Promise<PdfDocumentInfo> {
+  const trimBoxPt = scanTrimBox(data)
   const doc = await loadDocument(data)
   const parts: string[] = []
+  let pageSize: PdfPageSize | null = null
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i)
+    if (i === 1) {
+      // page.view is the CropBox [x1, y1, x2, y2] in PDF units (userUnit × pt)
+      const unit = (page.userUnit || 1) * PT_TO_MM
+      let [w, h] = trimBoxPt ?? [page.view[2] - page.view[0], page.view[3] - page.view[1]]
+      if (page.rotate === 90 || page.rotate === 270) [w, h] = [h, w]
+      if (w > 0 && h > 0) {
+        pageSize = { widthMm: w * unit, heightMm: h * unit, source: trimBoxPt ? 'trimbox' : 'cropbox' }
+      }
+    }
     const content = await page.getTextContent()
     let pageText = ''
     for (const item of content.items) {
@@ -82,7 +130,7 @@ export async function extractPdfText(data: ArrayBuffer): Promise<PdfDocumentInfo
   }
   const pageCount = doc.numPages
   await doc.destroy()
-  return { pageCount, text: normalizeExtractedText(parts.join('\n')) }
+  return { pageCount, text: normalizeExtractedText(parts.join('\n')), pageSize }
 }
 
 /**
